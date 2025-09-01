@@ -1,9 +1,9 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
 import { useAuth } from '../context/AuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getDocument, Document } from '../services/documentService';
+import { getDocument } from '../services/documentService';
 import { formatFileSize, formatDate } from '../utils/formatters';
 
 const DocumentView: React.FC = () => {
