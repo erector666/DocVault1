@@ -156,11 +156,56 @@ const defaultTranslations: Translations = {
     mk: 'Дозволени типови на датотеки: {types}',
     fr: 'Types de fichiers autorisés: {types}',
   },
+  'upload.dropzone': {
+    en: 'Drop files here or click to browse',
+    mk: 'Повлечете ги датотеките овде или кликнете за пребарување',
+    fr: 'Déposez les fichiers ici ou cliquez pour parcourir',
+  },
+  'upload.title': {
+    en: 'Upload Documents',
+    mk: 'Прикачи документи',
+    fr: 'Télécharger des documents',
+  },
+  'upload.instructions': {
+    en: 'Select files to upload to your document vault',
+    mk: 'Изберете датотеки за прикачување во вашата документна каса',
+    fr: 'Sélectionnez les fichiers à télécharger dans votre coffre-fort de documents',
+  },
+  'upload.browse': {
+    en: 'Browse Files',
+    mk: 'Пребарај датотеки',
+    fr: 'Parcourir les fichiers',
+  },
+  'upload.selectedFiles': {
+    en: 'Selected Files',
+    mk: 'Избрани датотеки',
+    fr: 'Fichiers sélectionnés',
+  },
+  'upload.removeFile': {
+    en: 'Remove',
+    mk: 'Отстрани',
+    fr: 'Supprimer',
+  },
+  'upload.uploadFiles': {
+    en: 'Upload Files',
+    mk: 'Прикачи датотеки',
+    fr: 'Télécharger les fichiers',
+  },
+  'upload.uploading': {
+    en: 'Uploading...',
+    mk: 'Прикачување...',
+    fr: 'Téléchargement...',
+  },
   // Common translations
   'common.cancel': {
     en: 'Cancel',
     mk: 'Откажи',
     fr: 'Annuler',
+  },
+  'common.delete': {
+    en: 'Delete',
+    mk: 'Избриши',
+    fr: 'Supprimer',
   },
   'documents.deleteConfirmation.title': {
     en: 'Delete Document',
@@ -286,6 +331,27 @@ const defaultTranslations: Translations = {
     en: 'Failed to reset password. Please check your email and try again.',
     mk: 'Неуспешно ресетирање на лозинката. Проверете ја вашата е-пошта и обидете се повторно.',
     fr: 'Échec de la réinitialisation du mot de passe. Veuillez vérifier votre email et réessayer.',
+  },
+  // Document translations
+  'documents.noDocuments': {
+    en: 'No documents found',
+    mk: 'Не се пронајдени документи',
+    fr: 'Aucun document trouvé',
+  },
+  'documents.uploadPrompt': {
+    en: 'Upload your first document to get started',
+    mk: 'Прикачете го вашиот прв документ за да започнете',
+    fr: 'Télécharger votre premier document pour commencer',
+  },
+  'upload.error.uploadFailed': {
+    en: 'Upload failed. Please try again.',
+    mk: 'Прикачувањето не успеа. Обидете се повторно.',
+    fr: 'Échec du téléchargement. Veuillez réessayer.',
+  },
+  'upload.error.noFiles': {
+    en: 'Please select files to upload',
+    mk: 'Изберете датотеки за прикачување',
+    fr: 'Veuillez sélectionner des fichiers à télécharger',
   },
 };
 

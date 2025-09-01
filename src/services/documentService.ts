@@ -236,8 +236,10 @@ export const deleteDocument = async (documentId: string): Promise<void> => {
     const documentData = docSnap.data() as Document;
     
     // Delete from Storage
-    const storageRef = ref(storage, documentData.path);
-    await deleteObject(storageRef);
+    if (documentData.path) {
+      const storageRef = ref(storage, documentData.path);
+      await deleteObject(storageRef);
+    }
     
     // Delete from Firestore
     await deleteDoc(docRef);

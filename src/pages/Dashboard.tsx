@@ -1,5 +1,6 @@
 import React from 'react';
 import { useLanguage } from '../context/LanguageContext';
+import DocumentList from '../components/documents/DocumentList';
 
 const Dashboard: React.FC = () => {
   const { translate } = useLanguage();
@@ -12,14 +13,7 @@ const Dashboard: React.FC = () => {
         {/* Recent Uploads Section */}
         <div className="col-span-full bg-white dark:bg-gray-800 rounded-lg shadow-md p-4 md:p-6 mb-4 md:mb-6">
           <h2 className="text-lg md:text-xl font-semibold mb-3 md:mb-4">{translate('recentUploads')}</h2>
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 md:gap-4">
-            {/* Placeholder for recent uploads */}
-            <div className="bg-gray-100 dark:bg-gray-700 rounded-lg h-32 md:h-40 flex items-center justify-center p-4">
-              <p className="text-gray-500 dark:text-gray-400 text-sm md:text-base text-center">
-                No recent uploads
-              </p>
-            </div>
-          </div>
+          <DocumentList />
         </div>
         
         {/* Categories Section */}
@@ -33,7 +27,7 @@ const Dashboard: React.FC = () => {
                 className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-3 md:p-4 hover:shadow-lg transition-shadow cursor-pointer touch-manipulation"
               >
                 <div className="flex flex-col items-center justify-center h-24 md:h-32">
-                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary-100 dark:bg-primary-900 flex items-center justify-center mb-2">
+                  <div className="w-10 h-10 md:w-12 md:h-12 rounded-full bg-primary-100 dark:bg-gray-700 flex items-center justify-center mb-2">
                     {/* Placeholder for category icon */}
                     <span className="text-primary-600 dark:text-primary-300 text-lg md:text-xl">📁</span>
                   </div>

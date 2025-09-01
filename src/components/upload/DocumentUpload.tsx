@@ -1,9 +1,12 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
+import { useAuth } from '../../context/AuthContext';
+import { useQueryClient } from 'react-query';
 import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { storage, db } from '../../services/firebase';
+import { processDocumentWithAI } from '../../services/aiProcessingService';
 
 interface DocumentUploadProps {
   onUploadComplete?: (documentId: string) => void;
@@ -17,6 +20,8 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
   maxFileSize = 10, // Default 10MB
 }) => {
   const { translate } = useLanguage();
+  const { currentUser } = useAuth();
+  const queryClient = useQueryClient();
   const [isDragging, setIsDragging] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [uploadProgress, setUploadProgress] = useState<{ [key: string]: number }>({});
@@ -122,13 +127,29 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
               type: file.type,
               size: file.size,
               url: downloadURL,
+              path: uploadTask.snapshot.ref.fullPath,
+              userId: currentUser?.uid,
+              userEmail: currentUser?.email,
               uploadedAt: serverTimestamp(),
-              // Add more metadata as needed
+              aiProcessed: false, // Will be updated after AI processing
             });
 
             if (onUploadComplete) {
               onUploadComplete(docRef.id);
             }
+
+            // 🚀 START AI PROCESSING!
+            try {
+              console.log('🤖 Starting AI processing for:', file.name);
+              await processDocumentWithAI(docRef.id, downloadURL, file.type);
+              console.log('✅ AI processing completed for:', file.name);
+            } catch (error) {
+              console.error('❌ AI processing failed for:', file.name, error);
+              // Continue with upload even if AI fails
+            }
+
+            // Invalidate React Query cache to refresh document list
+            queryClient.invalidateQueries(['documents', currentUser?.uid]);
 
             // If this is the last file, reset the component
             if (file === files[files.length - 1]) {

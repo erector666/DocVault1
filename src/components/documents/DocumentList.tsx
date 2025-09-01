@@ -196,6 +196,42 @@ const DocumentList: React.FC<DocumentListProps> = ({
                     )}
                   </div>
                 )}
+                
+                {/* 🆕 AI Processing Results */}
+                {document.metadata?.aiProcessed && (
+                  <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-900/20 rounded">
+                    <h4 className="text-sm font-semibold text-blue-800 dark:text-blue-200">
+                      🤖 AI Analysis Results
+                    </h4>
+                    
+                    {/* Categories */}
+                    {document.metadata.categories && (
+                      <div className="mt-1">
+                        <span className="text-xs text-blue-600 dark:text-blue-300">
+                          Categories: {document.metadata.categories.join(', ')}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Language */}
+                    {document.metadata.language && (
+                      <div className="mt-1">
+                        <span className="text-xs text-blue-600 dark:text-blue-300">
+                          Language: {document.metadata.language}
+                        </span>
+                      </div>
+                    )}
+                    
+                    {/* Summary */}
+                    {document.metadata.summary && (
+                      <div className="mt-1">
+                        <span className="text-xs text-blue-600 dark:text-blue-300">
+                          Summary: {document.metadata.summary}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                )}
               </div>
               <div className="flex-shrink-0">
                 <button

@@ -34,7 +34,12 @@ function App() {
         <LanguageProvider>
           <AuthProvider>
             <UploadModalProvider>
-              <Router>
+              <Router
+                future={{
+                  v7_startTransition: true,
+                  v7_relativeSplatPath: true
+                }}
+              >
                 <div className="App">
                   {showSplash ? <SplashScreen /> : <AppRoutes />}
                 </div>
