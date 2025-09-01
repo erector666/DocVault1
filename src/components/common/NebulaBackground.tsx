@@ -81,8 +81,16 @@ const NebulaBackground: React.FC<NebulaBackgroundProps> = ({ className = '' }) =
   return (
     <canvas
       ref={canvasRef}
-      className={`fixed inset-0 w-full h-full -z-10 ${className}`}
-      style={{ background: 'black' }}
+      className={`fixed inset-0 w-full h-full ${className}`}
+      style={{ 
+        background: 'black',
+        zIndex: 0,
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        width: '100vw',
+        height: '100vh'
+      }}
     />
   );
 };
