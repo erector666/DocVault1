@@ -42,46 +42,7 @@ jobs:
         name: build-files
         path: build/
 
-  # Job 2: Deploy Firebase Functions
-  deploy-firebase-functions:
-    needs: build-and-test
-    runs-on: ubuntu-latest
-    if: github.ref == 'refs/heads/main'
-    
-    steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-      
-    - name: Setup Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: '18'
-        cache: 'npm'
-        
-    - name: Install Firebase CLI
-      run: npm install -g firebase-tools
-      
-    - name: Install function dependencies
-      run: |
-        cd functions
-        npm ci
-        npm run build
-        
-    - name: Setup Firebase credentials
-      run: |
-        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccountKey.json
-        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/serviceAccountKey.json"
-        
-    - name: Deploy to Firebase
-      run: |
-        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/serviceAccountKey.json"
-        firebase deploy --only functions --project gpt1-77ce0
-      env:
-        GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
-        GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
-        GOOGLE_LANGUAGE_API_KEY: ${{ secrets.GOOGLE_LANGUAGE_API_KEY }}
-
-  # Job 3: Deploy to Vercel
+  # Job 2: Deploy to Vercel
   deploy-vercel:
     needs: build-and-test
     runs-on: ubuntu-latest
@@ -101,9 +62,9 @@ jobs:
         vercel-args: '--prod'
 
 
-  # Job 4: Update deployment status
+  # Job 3: Update deployment status
   update-status:
-    needs: [deploy-firebase-functions, deploy-vercel]
+    needs: [deploy-vercel]
     runs-on: ubuntu-latest
     if: github.ref == 'refs/heads/main'
     
@@ -111,6 +72,5 @@ jobs:
     - name: Update deployment status
       run: |
         echo "🚀 Deployment completed successfully!"
-        echo "✅ Firebase Functions deployed"
-        echo "✅ Frontend deployed to Vercel"
+        echo "✅ Frontend deployed to Vercel with Supabase backend"
         echo "🌐 Your app is now live!"
