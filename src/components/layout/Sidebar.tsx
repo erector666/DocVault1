@@ -54,7 +54,7 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
       {/* Logo */}
       <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
         <img src="/logo2.png" alt="DocVault Logo" className="h-8 w-8 rounded-full" />
-        <span className="ml-2 text-xl font-semibold">
+        <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white">
           DocVault
         </span>
       </div>

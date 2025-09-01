@@ -42,21 +42,25 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   };
 
   return (
-    <header className="bg-white dark:bg-gray-800 shadow-md py-2 px-4">
-      <div className="flex items-center justify-between">
-        {/* Mobile menu button */}
-        <button 
-          onClick={onMenuClick}
-          className="md:hidden p-2 rounded-md text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700"
-        >
-          <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-          </svg>
-        </button>
+    <header className="bg-white dark:bg-gray-800 shadow-md py-3 px-4 md:px-6">
+      <div className="flex items-center justify-between h-12">
+        {/* Left side - Mobile Menu Button */}
+        <div className="flex items-center flex-shrink-0">
+          <button 
+            id="hamburger-button"
+            onClick={onMenuClick}
+            className="md:hidden p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+            aria-label="Toggle mobile menu"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
+            </svg>
+          </button>
+        </div>
 
-        {/* Search bar */}
-        <div className="hidden md:flex flex-1 max-w-xl mx-4">
-          <div className="relative w-full">
+        {/* Center - Search Bar */}
+        <div className="flex-1 flex justify-center max-w-2xl mx-4 md:mx-8">
+          <div className="relative w-full max-w-lg">
             <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
               <svg className="w-5 h-5 text-gray-500 dark:text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
@@ -64,32 +68,33 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
             <input 
               type="search" 
-              className="block w-full p-2 pl-10 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
+              className="block w-full p-2.5 pl-10 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
               placeholder={`${translate('search')}...`} 
             />
           </div>
         </div>
 
         {/* Right side actions */}
-        <div className="flex items-center space-x-4">
-          {/* Upload Button */}
+        <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
+          {/* Upload Button - Hidden on small mobile, shown on larger mobile */}
           <button 
             onClick={openModal}
-            className="bg-primary-600 hover:bg-primary-700 text-white font-bold py-2 px-4 rounded-md flex items-center transition-colors"
+            className="hidden sm:flex bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-3 md:px-4 rounded-lg items-center transition-colors touch-manipulation"
           >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
             </svg>
-            {translate('upload')}
+            <span className="hidden md:inline">{translate('upload')}</span>
           </button>
+          
           {/* Theme toggle */}
           <ThemeToggle size="md" />
 
-          {/* Language selector */}
-          <div className="relative">
+          {/* Language selector - Hidden on very small screens */}
+          <div className="relative hidden sm:block">
             <button 
               onClick={toggleLanguageMenu}
-              className="p-2 rounded-full text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center"
+              className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 flex items-center transition-colors touch-manipulation"
               aria-label="Change language"
             >
               <span className="text-sm font-medium mr-1">{language.toUpperCase()}</span>
@@ -139,7 +144,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           <div className="relative">
             <button 
               onClick={toggleProfileMenu}
-              className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500"
+              className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-primary-500 touch-manipulation"
               aria-label="User menu"
             >
               <div className="h-8 w-8 rounded-full bg-primary-200 dark:bg-primary-700 flex items-center justify-center text-primary-700 dark:text-primary-200 overflow-hidden">

@@ -31,9 +31,9 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       className={`
         ${sizeClasses[size]}
         relative inline-flex items-center justify-center
-        rounded-xl border border-gray-200 bg-white
-        text-gray-700 shadow-soft transition-all duration-300
-        hover:shadow-medium hover:scale-105
+        rounded-lg border border-gray-200 bg-white
+        text-gray-700 shadow-sm transition-all duration-300
+        hover:shadow-md hover:scale-105
         focus:outline-none focus:ring-2 focus:ring-primary-500 focus:ring-offset-2
         dark:border-gray-700 dark:bg-gray-800 dark:text-gray-200
         dark:hover:bg-gray-700 dark:focus:ring-offset-gray-900
@@ -41,7 +41,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
       `}
       aria-label={`Switch to ${theme === 'light' ? 'dark' : 'light'} mode`}
     >
-      <div className="relative">
+      <div className="relative w-full h-full flex items-center justify-center">
         {/* Sun Icon */}
         <SunIcon
           className={`
@@ -51,7 +51,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               ? 'rotate-0 scale-100 opacity-100' 
               : 'rotate-90 scale-0 opacity-0'
             }
-            absolute inset-0
+            absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
           `}
         />
         
@@ -64,7 +64,7 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = ({
               ? 'rotate-0 scale-100 opacity-100' 
               : '-rotate-90 scale-0 opacity-0'
             }
-            absolute inset-0
+            absolute top-1/2 left-1/2 transform -translate-x-1/2 -translate-y-1/2
           `}
         />
       </div>
