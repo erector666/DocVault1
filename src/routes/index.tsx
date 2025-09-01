@@ -8,6 +8,7 @@ import Layout from '../components/layout/Layout';
 // Lazy load pages for better performance
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const CategoryView = React.lazy(() => import('../pages/CategoryView'));
+const DocumentView = React.lazy(() => import('../pages/DocumentView'));
 const Settings = React.lazy(() => import('../pages/Settings'));
 const Profile = React.lazy(() => import('../components/profile/Profile'));
 const NotFound = React.lazy(() => import('../pages/NotFound'));
@@ -51,6 +52,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <CategoryView />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/document/:documentId" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <DocumentView />
               </Layout>
             </ProtectedRoute>
           } 
