@@ -4,13 +4,16 @@ import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 const ForgotPassword: React.FC = () => {
-  const { resetPassword } = useAuth();
+  const { resetPassword, resendVerificationEmail } = useAuth();
   const { translate } = useLanguage();
   
   const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [message, setMessage] = useState('');
   const [loading, setLoading] = useState(false);
+  const [resendLoading, setResendLoading] = useState(false);
+  const [showPasswordField, setShowPasswordField] = useState(false);
   const messageRef = useRef<HTMLDivElement>(null);
   
   // Force re-render when language changes to update translations
@@ -61,16 +64,47 @@ const ForgotPassword: React.FC = () => {
     }
   };
 
+  const handleResendVerification = async () => {
+    if (!email || !/^\S+@\S+\.\S+$/.test(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
+
+    if (!password) {
+      setError('Password is required to resend verification email.');
+      return;
+    }
+
+    try {
+      setError('');
+      setMessage('');
+      setResendLoading(true);
+      await resendVerificationEmail(email, password);
+      setMessage('Verification email sent! Please check your email (including spam folder).');
+    } catch (err: any) {
+      console.error('Resend verification error:', err);
+      if (err.message === 'Email is already verified') {
+        setError('Email is already verified. You can now sign in.');
+      } else if (err.message === 'User not found') {
+        setError('User not found. Please check your email address.');
+      } else {
+        setError('Failed to resend verification email. Please check your credentials and try again.');
+      }
+    } finally {
+      setResendLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
       <div className="max-w-md w-full space-y-6">
         <div className="text-center">
           <img className="mx-auto h-24 w-auto rounded-full" src="/logo2.png" alt="DocVault Logo" />
           <h2 className="mt-6 text-center text-4xl font-bold text-white">
-            Forgot Password
+            Account Recovery
           </h2>
           <p className="mt-2 text-center text-sm text-blue-300">
-            Enter your email to reset your password
+            Reset your password or resend verification email
           </p>
         </div>
         
@@ -112,7 +146,7 @@ const ForgotPassword: React.FC = () => {
             </div>
           )}
 
-          <div>
+          <div className="space-y-3">
             <button
               type="submit"
               disabled={loading}
@@ -138,6 +172,67 @@ const ForgotPassword: React.FC = () => {
               )}
               {loading ? "Sending Reset Link..." : "Reset Password"}
             </button>
+
+            {/* Toggle for verification email */}
+            <div className="text-center">
+              <button
+                type="button"
+                onClick={() => setShowPasswordField(!showPasswordField)}
+                className="text-sm text-blue-400 hover:text-blue-300 underline"
+              >
+                {showPasswordField ? 'Hide' : 'Need to resend verification email?'}
+              </button>
+            </div>
+
+            {/* Password field for verification email */}
+            {showPasswordField && (
+              <div>
+                <label htmlFor="password" className="sr-only">
+                  Password (for verification email)
+                </label>
+                <input
+                  id="password"
+                  name="password"
+                  type="password"
+                  autoComplete="current-password"
+                  value={password}
+                  onChange={(e) => setPassword(e.target.value)}
+                  className="appearance-none rounded-md relative block w-full px-3 py-2 border border-gray-700 bg-gray-800 placeholder-gray-400 text-white focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                  placeholder="Enter your password"
+                />
+              </div>
+            )}
+
+            {/* Resend Verification Email Button */}
+            {showPasswordField && (
+              <button
+                type="button"
+                onClick={handleResendVerification}
+                disabled={resendLoading || !email || !password}
+                className={`w-full flex justify-center py-2 px-4 border border-gray-600 text-sm font-medium rounded-md text-gray-300 ${
+                  resendLoading || !email || !password
+                    ? 'bg-gray-700 cursor-not-allowed'
+                    : 'bg-gray-800 hover:bg-gray-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-500'
+                }`}
+              >
+                {resendLoading ? (
+                  <span className="flex items-center justify-center">
+                    <svg className="animate-spin h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Sending...
+                  </span>
+                ) : (
+                  <span className="flex items-center justify-center">
+                    <svg className="h-4 w-4 mr-2" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 4.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+                    </svg>
+                    Resend Verification Email
+                  </span>
+                )}
+              </button>
+            )}
           </div>
         </form>
 

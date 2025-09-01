@@ -20,6 +20,9 @@ functions/lib
 .env.test.local
 .env.production.local
 
+# Firebase service account key (SECURITY: Never commit this!)
+functions/serviceAccountKey.json
+
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*

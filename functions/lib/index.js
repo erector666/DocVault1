@@ -36,13 +36,11 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.getStorageUsage = exports.classifyDocument = exports.summarizeDocument = exports.detectLanguage = exports.extractText = exports.translateDocument = exports.getSupportedLanguages = void 0;
+exports.translateText = exports.translateDocument = exports.getSupportedLanguages = void 0;
 const functions = __importStar(require("firebase-functions"));
 const admin = __importStar(require("firebase-admin"));
 const https_1 = require("firebase-functions/v2/https");
-const https_2 = require("firebase-functions/v2/https");
 const node_fetch_1 = __importDefault(require("node-fetch"));
-const language_1 = require("@google-cloud/language");
 try {
     admin.initializeApp();
 }
@@ -115,90 +113,33 @@ exports.translateDocument = (0, https_1.onCall)(async (request) => {
     translationCache[cacheKey] = { ...result, timestamp: Date.now() };
     return result;
 });
-exports.extractText = (0, https_1.onCall)(async (request) => {
-    return { text: '' };
-});
-exports.detectLanguage = (0, https_1.onCall)(async (request) => {
-    const { documentUrl } = request.data;
-    const client = new language_1.LanguageServiceClient();
-    const textResp = await (0, node_fetch_1.default)(documentUrl);
-    if (!textResp.ok) {
-        throw new functions.https.HttpsError('not-found', 'Unable to fetch document content');
+exports.translateText = (0, https_1.onCall)(async (request) => {
+    const { text, targetLanguage, sourceLanguage } = request.data;
+    const apiKey = process.env.GOOGLE_TRANSLATE_API_KEY;
+    if (!apiKey) {
+        throw new functions.https.HttpsError('failed-precondition', 'Missing GOOGLE_TRANSLATE_API_KEY');
     }
-    const text = await textResp.text();
-    const [syntax] = await client.analyzeSyntax({ document: { content: text, type: 'PLAIN_TEXT' } });
-    const language = syntax?.language || 'en';
-    return { language };
-});
-exports.summarizeDocument = (0, https_1.onCall)(async (request) => {
-    const { documentUrl, maxLength = 200 } = request.data;
-    const textResp = await (0, node_fetch_1.default)(documentUrl);
-    if (!textResp.ok) {
-        throw new functions.https.HttpsError('not-found', 'Unable to fetch document content');
+    const body = {
+        q: text,
+        target: targetLanguage,
+        ...(sourceLanguage ? { source: sourceLanguage } : {}),
+        format: 'text',
+    };
+    const resp = await (0, node_fetch_1.default)(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+    });
+    if (!resp.ok) {
+        throw new functions.https.HttpsError('internal', `Translate API error: ${resp.status}`);
     }
-    const text = await textResp.text();
-    const summary = text.length > maxLength ? `${text.slice(0, maxLength)}...` : text;
-    return { summary };
-});
-exports.classifyDocument = (0, https_1.onCall)(async (request) => {
-    const { documentUrl } = request.data;
-    const client = new language_1.LanguageServiceClient();
-    const textResp = await (0, node_fetch_1.default)(documentUrl);
-    if (!textResp.ok) {
-        throw new functions.https.HttpsError('not-found', 'Unable to fetch document content');
-    }
-    const text = await textResp.text();
-    try {
-        const [result] = await client.classifyText({ document: { content: text, type: 'PLAIN_TEXT' } });
-        const categories = (result.categories || []).map(c => c.name || '').filter(Boolean);
-        const tags = (result.categories || []).map(c => (c.name || '').split('/').filter(Boolean).pop() || '').filter(Boolean);
-        const confidence = Math.max(...(result.categories || []).map(c => c.confidence || 0), 0);
-        return {
-            categories: categories.length ? categories : ['Other'],
-            tags,
-            summary: text.slice(0, 160),
-            language: 'en',
-            confidence,
-        };
-    }
-    catch (e) {
-        const lower = text.toLowerCase();
-        const categories = [];
-        const tags = [];
-        if (lower.includes('invoice') || lower.includes('receipt')) {
-            categories.push('Financial');
-            tags.push('invoice', 'payment');
-        }
-        else if (lower.includes('report') || lower.includes('analysis')) {
-            categories.push('Reports');
-            tags.push('report', 'analysis');
-        }
-        else if (lower.includes('contract') || lower.includes('agreement')) {
-            categories.push('Legal');
-            tags.push('contract', 'legal');
-        }
-        return {
-            categories: categories.length ? categories : ['Other'],
-            tags,
-            summary: lower.slice(0, 160),
-            language: 'en',
-            confidence: 0.6,
-        };
-    }
-});
-exports.getStorageUsage = (0, https_2.onRequest)(async (req, res) => {
-    const authHeader = req.get('Authorization') || '';
-    if (!authHeader.startsWith('Bearer ')) {
-        res.status(401).json({ error: 'Unauthorized' });
-        return;
-    }
-    try {
-        const idToken = authHeader.replace('Bearer ', '');
-        const decoded = await admin.auth().verifyIdToken(idToken);
-        res.json({ data: { totalSize: 0 } });
-    }
-    catch (e) {
-        res.status(401).json({ error: 'Unauthorized' });
-    }
+    const data = (await resp.json());
+    const translatedText = data.data?.translations?.[0]?.translatedText || '';
+    return {
+        translatedText,
+        sourceLanguage: sourceLanguage || data.data?.translations?.[0]?.detectedSourceLanguage || 'en',
+        targetLanguage,
+        confidence: 0.9,
+    };
 });
 //# sourceMappingURL=index.js.map

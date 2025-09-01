@@ -38,6 +38,17 @@ const DocumentList: React.FC<DocumentListProps> = ({
     }
   );
 
+  // DEBUG: Add console logging to see what's happening
+  useEffect(() => {
+    console.log('🔍 DEBUG - DocumentList Component:');
+    console.log('Current User:', currentUser);
+    console.log('User UID:', currentUser?.uid);
+    console.log('Documents Data:', documents);
+    console.log('Is Loading:', isLoading);
+    console.log('Is Error:', isError);
+    console.log('Category Filter:', category);
+  }, [currentUser, documents, isLoading, isError, category]);
+
   // Filter documents based on search term
   const filteredDocuments = documents?.filter(doc => 
     doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||

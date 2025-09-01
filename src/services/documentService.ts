@@ -151,6 +151,12 @@ export const getUserDocuments = async (
   orderDirection: 'asc' | 'desc' = 'desc'
 ): Promise<Document[]> => {
   try {
+    console.log('🔍 DEBUG - getUserDocuments called with:');
+    console.log('User ID:', userId);
+    console.log('Category:', category);
+    console.log('Order By:', orderByField);
+    console.log('Order Direction:', orderDirection);
+
     let q = query(
       collection(db, 'documents'),
       where('userId', '==', userId),
@@ -166,19 +172,27 @@ export const getUserDocuments = async (
       );
     }
     
+    console.log('🔍 DEBUG - Query created:', q);
+    
     const querySnapshot = await getDocs(q);
+    console.log('🔍 DEBUG - Query result:', querySnapshot);
+    console.log('🔍 DEBUG - Number of documents found:', querySnapshot.size);
+    
     const documents: Document[] = [];
     
     querySnapshot.forEach((doc) => {
+      const docData = doc.data();
+      console.log('🔍 DEBUG - Document data:', doc.id, docData);
       documents.push({
         id: doc.id,
-        ...doc.data()
+        ...docData
       } as Document);
     });
     
+    console.log('🔍 DEBUG - Final documents array:', documents);
     return documents;
   } catch (error) {
-    console.error('Error getting user documents:', error);
+    console.error('❌ ERROR in getUserDocuments:', error);
     throw error;
   }
 };
