@@ -1,7 +1,7 @@
 import * as functions from 'firebase-functions';
 import * as admin from 'firebase-admin';
 import { onCall } from 'firebase-functions/v2/https';
-import fetch from 'node-fetch';
+// Dynamic import for node-fetch to handle ESM compatibility
 
 // Initialize Admin SDK
 try {
@@ -32,6 +32,7 @@ export const getSupportedLanguages = onCall(async () => {
     return { languages: translateLanguagesCache.data };
   }
   const url = `https://translation.googleapis.com/language/translate/v2/languages?key=${apiKey}&target=en`;
+  const fetch = (await import('node-fetch')).default;
   const resp = await fetch(url);
   if (!resp.ok) {
     throw new functions.https.HttpsError('internal', `Translate API error: ${resp.status}`);
@@ -59,6 +60,7 @@ export const translateDocument = onCall(async (request) => {
     return cached;
   }
   // For MVP, assume the documentUrl points to raw text content
+  const fetch = (await import('node-fetch')).default;
   const docResp = await fetch(documentUrl);
   if (!docResp.ok) {
     throw new functions.https.HttpsError('not-found', 'Unable to fetch document content');
@@ -109,6 +111,7 @@ export const translateText = onCall(async (request) => {
     format: 'text',
   } as any;
   
+  const fetch = (await import('node-fetch')).default;
   const resp = await fetch(`https://translation.googleapis.com/language/translate/v2?key=${apiKey}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
