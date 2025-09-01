@@ -73,7 +73,9 @@ jobs:
         export GOOGLE_APPLICATION_CREDENTIALS="$PWD/serviceAccountKey.json"
         
     - name: Deploy to Firebase
-      run: firebase deploy --only functions
+      run: |
+        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/serviceAccountKey.json"
+        firebase deploy --only functions --project gpt1-77ce0
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}

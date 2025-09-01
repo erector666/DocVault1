@@ -47,38 +47,55 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
 
   return (
     <div
-      className={`h-full bg-white dark:bg-gray-800 shadow-md flex flex-col w-60 ${
+      className={`h-full bg-white dark:bg-gray-800 shadow-md flex flex-col ${
+        isMobile ? 'w-64' : 'w-60'
+      } ${
         isMobile ? 'fixed inset-y-0 left-0 z-50' : 'sticky top-0'
       }`}
     >
-      {/* Logo */}
-      <div className="flex items-center p-4 border-b border-gray-200 dark:border-gray-700">
-        <img src="/logo2.png" alt="DocVault Logo" className="h-8 w-8 rounded-full" />
-        <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white">
-          DocVault
-        </span>
+      {/* Logo and Close Button (Mobile) */}
+      <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+        <div className="flex items-center">
+          <img src="/logo2.png" alt="DocVault Logo" className="h-8 w-8 rounded-full" />
+          <span className="ml-3 text-xl font-semibold text-gray-900 dark:text-white">
+            DocVault
+          </span>
+        </div>
+        
+        {/* Close button for mobile */}
+        {isMobile && (
+          <button
+            onClick={onClose}
+            className="p-2 rounded-lg text-gray-600 dark:text-gray-300 hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors touch-manipulation"
+            aria-label="Close sidebar"
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
       </div>
 
       {/* Navigation Links */}
-      <nav className="flex-1 overflow-y-auto py-4">
-        <ul className="space-y-2 px-2">
+      <nav className="flex-1 overflow-y-auto py-4 px-2">
+        <ul className="space-y-1">
           {/* Dashboard */}
           <li>
             <NavLink 
               to="/dashboard" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center p-3 rounded-lg transition-colors touch-manipulation ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-8 w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 12l2-2m0 0l7-7 7 7M5 10v10a1 1 0 001 1h3m10-11l2 2m-2-2v10a1 1 0 01-1 1h-3m-6 0a1 1 0 001-1v-4a1 1 0 011-1h2a1 1 0 011 1v4a1 1 0 001 1m-6 0h6" />
               </svg>
-              <span className="ml-3">
+              <span className="ml-3 text-base md:text-lg">
                 {translate('dashboard')}
               </span>
             </NavLink>
