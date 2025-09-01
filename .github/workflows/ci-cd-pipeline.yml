@@ -67,9 +67,15 @@ jobs:
         npm ci
         npm run build
         
+    - name: Setup Firebase credentials
+      run: |
+        echo '${{ secrets.FIREBASE_SERVICE_ACCOUNT }}' > serviceAccountKey.json
+        export GOOGLE_APPLICATION_CREDENTIALS="$PWD/serviceAccountKey.json"
+        
     - name: Deploy to Firebase
-      run: firebase deploy --only functions --token "${{ secrets.FIREBASE_TOKEN }}"
+      run: firebase deploy --only functions
       env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ github.workspace }}/serviceAccountKey.json
         GOOGLE_TRANSLATE_API_KEY: ${{ secrets.GOOGLE_TRANSLATE_API_KEY }}
         GOOGLE_LANGUAGE_API_KEY: ${{ secrets.GOOGLE_LANGUAGE_API_KEY }}
 

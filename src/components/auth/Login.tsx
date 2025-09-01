@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useLanguage } from '../../context/LanguageContext';
+import NebulaBackground from '../common/NebulaBackground';
 
 const Login: React.FC = () => {
   const { signIn, logOut } = useAuth();
@@ -61,8 +62,9 @@ const Login: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gray-900 py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-6">
+    <div className="min-h-screen flex items-center justify-center py-12 px-4 sm:px-6 lg:px-8 relative">
+      <NebulaBackground />
+      <div className="max-w-md w-full space-y-6 relative z-10">
         <div className="text-center">
           <img className="mx-auto h-24 w-auto rounded-full" src="/logo2.png" alt="DocVault Logo" />
           <h2 className="mt-6 text-center text-4xl font-bold text-white">

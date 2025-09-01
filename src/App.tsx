@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from 'react-query';
 import './App.css';
+import SplashScreen from './components/common/SplashScreen';
 
 // Contexts
 import { ThemeProvider } from './context/ThemeContext';
@@ -16,6 +17,16 @@ import AppRoutes from './routes';
 const queryClient = new QueryClient();
 
 function App() {
+  const [showSplash, setShowSplash] = useState(true);
+
+  useEffect(() => {
+    // Hide splash screen after 3.5 seconds
+    const timer = setTimeout(() => {
+      setShowSplash(false);
+    }, 3500);
+
+    return () => clearTimeout(timer);
+  }, []);
 
   return (
     <QueryClientProvider client={queryClient}>
@@ -25,7 +36,7 @@ function App() {
             <UploadModalProvider>
               <Router>
                 <div className="App">
-                  <AppRoutes />
+                  {showSplash ? <SplashScreen /> : <AppRoutes />}
                 </div>
               </Router>
             </UploadModalProvider>
