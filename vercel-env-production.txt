@@ -1,0 +1,39 @@
+# VERCEL PRODUCTION ENVIRONMENT VARIABLES
+# Copy and paste these EXACTLY into your Vercel Dashboard:
+# Settings → Environment Variables → Add New
+
+# Firebase Configuration
+REACT_APP_FIREBASE_API_KEY=AIzaSyAXBPuFnMNl6UDUrz75h-KFk92pMTtEuis
+REACT_APP_FIREBASE_AUTH_DOMAIN=gpt1-77ce0.firebaseapp.com
+REACT_APP_FIREBASE_PROJECT_ID=gpt1-77ce0
+REACT_APP_FIREBASE_STORAGE_BUCKET=gpt1-77ce0.firebasestorage.app
+REACT_APP_FIREBASE_MESSAGING_SENDER_ID=887480132482
+REACT_APP_FIREBASE_APP_ID=1:887480132482:web:7f8d166d0d36d4f058e59b
+REACT_APP_FIREBASE_MEASUREMENT_ID=G-XTCDJJGTD2
+
+# Firebase Functions Configuration
+REACT_APP_FUNCTIONS_BASE_URL=https://us-central1-gpt1-77ce0.cloudfunctions.net
+
+# Environment Configuration
+NODE_ENV=production
+REACT_APP_ENV=production
+
+# Optional: Analytics and Monitoring
+REACT_APP_ENABLE_ANALYTICS=true
+REACT_APP_ENABLE_LOGGING=true
+
+# ========================================
+# INSTRUCTIONS FOR VERCEL SETUP:
+# ========================================
+# 1. Go to your Vercel project dashboard
+# 2. Navigate to Settings → Environment Variables
+# 3. Click "Add New" for each variable above
+# 4. Set Environment to "Production" for all variables
+# 5. Copy the Name and Value exactly as shown
+# 6. Click "Save" after adding each variable
+# 7. Deploy your project to apply the environment variables
+# ========================================
+# 
+# IMPORTANT: These are PRODUCTION values
+# Do NOT use development values in production
+# ========================================
