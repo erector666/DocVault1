@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
-import { getDocuments, deleteDocument } from '../../services/supabase';
+import { deleteDocument } from '../../services/supabase';
 import { Document } from '../../types/document';
 import { searchDocuments } from '../../services/searchService';
 import DocumentTranslation from '../translation/DocumentTranslation';

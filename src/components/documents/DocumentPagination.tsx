@@ -18,7 +18,7 @@ const DocumentPagination: React.FC<PaginationProps> = ({
   onPageChange,
   onItemsPerPageChange
 }) => {
-  const { translate } = useLanguage();
+  const { translate: _ } = useLanguage();
 
   const getVisiblePages = () => {
     const delta = 2;

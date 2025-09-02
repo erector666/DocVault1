@@ -82,7 +82,6 @@ const ForgotPassword: React.FC = () => {
       setResendLoading(true);
       // Resend verification not implemented in Supabase yet
       throw new Error('Resend verification not available');
-      setMessage('Verification email sent! Please check your email (including spam folder).');
     } catch (err: any) {
       console.error('Resend verification error:', err);
       if (err.message === 'Email is already verified') {

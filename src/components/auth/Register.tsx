@@ -57,7 +57,7 @@ const Register: React.FC = () => {
       setError('');
       setMessage('');
       setLoading(true);
-      const { user, error: authError } = await signUp(email, password);
+      const { error: authError } = await signUp(email, password);
       if (authError) {
         throw authError;
       }

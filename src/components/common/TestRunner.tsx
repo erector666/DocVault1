@@ -9,7 +9,7 @@ interface TestResult {
 }
 
 const TestRunner: React.FC = () => {
-  const { translate } = useLanguage();
+  const { translate: _ } = useLanguage();
   const [isRunning, setIsRunning] = useState(false);
   const [results, setResults] = useState<TestResult[]>([]);
 

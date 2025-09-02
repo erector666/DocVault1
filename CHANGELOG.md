@@ -8,6 +8,38 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- TestSprite MCP server integration for AI-powered automated testing
+- MCP configuration files for global and project-level TestSprite integration
+- TestSprite verification script for installation validation
+- Comprehensive TestSprite setup documentation and troubleshooting guide
+
+## [2025-09-02 14:43:56 +02:00]
+
+### Added
+- TestSprite MCP server (@testsprite/testsprite-mcp@0.0.13) installed
+- Global MCP configuration: %USERPROFILE%\.cursor\mcp_servers.json
+- Project MCP configuration: .cursor/mcp_servers.json
+- TestSprite verification script: scripts/verify-testsprite.js
+- Comprehensive setup guide: TESTSPRITE_SETUP.md
+
+### Dependencies
+- Added @testsprite/testsprite-mcp@0.0.13 for automated testing integration
+
+### Configuration
+- MCP server configured for TestSprite integration
+- Ready for API key configuration and IDE restart
+
+### Verification Completed
+- [x] Timestamp: 2025-09-02 14:43:56 +02:00
+- [x] Package installed successfully
+- [x] MCP server executable verified
+- [x] Configuration files created
+- [x] Verification script working
+- [x] Documentation created
+
+## [Unreleased]
+
+### Added
 - Comprehensive performance optimization system with caching, lazy loading, and virtual scrolling
 - Advanced error handling with ErrorBoundary, Toast notifications, and centralized error management
 - Enhanced security measures including rate limiting, input validation, and audit logging

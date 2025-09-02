@@ -19,6 +19,26 @@ const ScreenReaderSupport: React.FC<ScreenReaderSupportProps> = ({
   const errorAnnouncerRef = useRef<HTMLDivElement>(null);
   const successAnnouncerRef = useRef<HTMLDivElement>(null);
 
+  // Helper function to announce messages
+  const announceMessage = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
+    if (!settings.screenReaderMode) return;
+
+    const announcer = priority === 'assertive' ? 
+      errorAnnouncerRef.current : 
+      pageAnnouncerRef.current;
+
+    if (announcer) {
+      announcer.textContent = message;
+      
+      // Clear after a delay to allow screen readers to announce
+      setTimeout(() => {
+        if (announcer) {
+          announcer.textContent = '';
+        }
+      }, 1000);
+    }
+  }, [settings.screenReaderMode]);
+
   useEffect(() => {
     if (!settings.screenReaderMode) return;
 
@@ -59,28 +79,7 @@ const ScreenReaderSupport: React.FC<ScreenReaderSupportProps> = ({
         }
       }
     });
-
-  }, [settings.screenReaderMode, announcePageChanges]);
-
-  // Helper function to announce messages
-  const announceMessage = useCallback((message: string, priority: 'polite' | 'assertive' = 'polite') => {
-    if (!settings.screenReaderMode) return;
-
-    const announcer = priority === 'assertive' ? 
-      errorAnnouncerRef.current : 
-      pageAnnouncerRef.current;
-
-    if (announcer) {
-      announcer.textContent = message;
-      
-      // Clear after a delay to allow screen readers to announce
-      setTimeout(() => {
-        if (announcer) {
-          announcer.textContent = '';
-        }
-      }, 1000);
-    }
-  }, [settings.screenReaderMode]);
+  }, [settings.screenReaderMode, announcePageChanges, announceMessage]);
 
   useEffect(() => {
     if (!settings.screenReaderMode) return;

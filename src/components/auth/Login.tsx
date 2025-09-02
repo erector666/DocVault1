@@ -5,7 +5,7 @@ import { useLanguage } from '../../context/LanguageContext';
 import NebulaBackground from '../common/NebulaBackground';
 
 const Login: React.FC = () => {
-  const { signIn, signOut } = useSupabaseAuth();
+  const { signIn } = useSupabaseAuth();
   const { translate } = useLanguage();
   const navigate = useNavigate();
   

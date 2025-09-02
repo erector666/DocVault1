@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useRef } from 'react';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage, LanguageType } from '../../context/LanguageContext';
 import { useUploadModal } from '../../context/UploadModalContext';

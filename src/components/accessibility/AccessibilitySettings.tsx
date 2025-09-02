@@ -9,7 +9,7 @@ interface AccessibilitySettingsProps {
 
 const AccessibilitySettings: React.FC<AccessibilitySettingsProps> = ({ isOpen, onClose }) => {
   const { settings, updateSetting, announceToScreenReader } = useAccessibility();
-  const { translate } = useLanguage();
+  const { translate: _ } = useLanguage();
 
   if (!isOpen) return null;
 

@@ -168,6 +168,9 @@ describe('DocumentUpload Component', () => {
 
     await waitFor(() => {
       expect(mockPerformSecurityCheck).toHaveBeenCalledTimes(2);
+    });
+    
+    await waitFor(() => {
       expect(mockUploadDocument).toHaveBeenCalledTimes(2);
     });
   });
@@ -204,7 +207,7 @@ describe('DocumentUpload Component', () => {
       </TestWrapper>
     );
 
-    const dropArea = screen.getByText(/drag and drop/i).closest('div');
+    const dropArea = screen.getByTestId('drop-area') || screen.getByText(/drag and drop/i).parentElement;
     const file = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
 
     // Simulate drag over
@@ -219,6 +222,9 @@ describe('DocumentUpload Component', () => {
 
     await waitFor(() => {
       expect(mockPerformSecurityCheck).toHaveBeenCalledWith(file);
+    });
+    
+    await waitFor(() => {
       expect(mockUploadDocument).toHaveBeenCalled();
     });
   });

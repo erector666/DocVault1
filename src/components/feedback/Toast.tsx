@@ -37,6 +37,13 @@ const ToastComponent: React.FC<ToastProps> = ({
     return () => clearTimeout(timer);
   }, []);
 
+  const handleClose = () => {
+    setIsExiting(true);
+    setTimeout(() => {
+      onClose(id);
+    }, 300);
+  };
+
   useEffect(() => {
     if (duration > 0) {
       const timer = setTimeout(() => {
@@ -44,14 +51,7 @@ const ToastComponent: React.FC<ToastProps> = ({
       }, duration);
       return () => clearTimeout(timer);
     }
-  }, [duration]);
-
-  const handleClose = () => {
-    setIsExiting(true);
-    setTimeout(() => {
-      onClose(id);
-    }, 300);
-  };
+  }, [duration, handleClose]);
 
   const getIcon = () => {
     switch (type) {
