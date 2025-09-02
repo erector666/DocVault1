@@ -7,7 +7,7 @@ import SplashScreen from './components/common/SplashScreen';
 // Contexts
 import { ThemeProvider } from './context/ThemeContext';
 import { LanguageProvider } from './context/LanguageContext';
-import { AuthProvider } from './context/AuthContext';
+import { SupabaseAuthProvider } from './context/SupabaseAuthContext';
 import { UploadModalProvider } from './context/UploadModalContext';
 
 // Routes
@@ -32,7 +32,7 @@ function App() {
     <QueryClientProvider client={queryClient}>
       <ThemeProvider>
         <LanguageProvider>
-          <AuthProvider>
+          <SupabaseAuthProvider>
             <UploadModalProvider>
               <Router
                 future={{
@@ -45,7 +45,7 @@ function App() {
                 </div>
               </Router>
             </UploadModalProvider>
-          </AuthProvider>
+          </SupabaseAuthProvider>
         </LanguageProvider>
       </ThemeProvider>
     </QueryClientProvider>

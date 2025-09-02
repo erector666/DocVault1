@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import NebulaBackground from '../common/NebulaBackground';
 
 const Login: React.FC = () => {
-  const { signIn, logOut } = useAuth();
+  const { signIn, signOut } = useSupabaseAuth();
   const { translate } = useLanguage();
   const navigate = useNavigate();
   
@@ -36,25 +36,25 @@ const Login: React.FC = () => {
     try {
       setError('');
       setLoading(true);
-      const userCredential = await signIn(email, password);
-      if (userCredential.user && !userCredential.user.emailVerified) {
-        await logOut();
-        setError('Please verify your email to log in. You can resend verification email from the Forgot Password page.');
-      } else {
+      const { user, error: authError } = await signIn(email, password);
+      if (authError) {
+        throw authError;
+      }
+      if (user) {
         navigate('/dashboard');
       }
     } catch (err: any) {
       console.error('Login error:', err);
       
-      // Provide more specific error messages based on Firebase error codes
-      if (err.code === 'auth/user-not-found' || err.code === 'auth/wrong-password') {
+      // Provide more specific error messages based on Supabase error messages
+      if (err.message?.includes('Invalid login credentials')) {
         setError('Invalid email or password');
-      } else if (err.code === 'auth/too-many-requests') {
+      } else if (err.message?.includes('Email not confirmed')) {
+        setError('Please verify your email before signing in');
+      } else if (err.message?.includes('Too many requests')) {
         setError('Too many failed login attempts. Please try again later');
-      } else if (err.code === 'auth/user-disabled') {
-        setError('This account has been disabled');
       } else {
-        setError('Failed to sign in. Please check your credentials and try again.');
+        setError(err.message || 'Failed to sign in. Please check your credentials and try again.');
       }
     } finally {
       setLoading(false);

@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useQuery } from 'react-query';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { getUserDocuments, Document, deleteDocument } from '../../services/documentService';
+import { getDocuments, deleteDocument } from '../../services/supabaseDocumentService';
 import { formatFileSize, formatDate } from '../../utils/formatters';
 
 interface DocumentListProps {

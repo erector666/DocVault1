@@ -1,11 +1,9 @@
 import React, { useState, useRef } from 'react';
 import { motion } from 'framer-motion';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useQueryClient } from 'react-query';
-import { ref, uploadBytesResumable, getDownloadURL } from 'firebase/storage';
-import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { storage, db } from '../../services/firebase';
+import { uploadDocument } from '../../services/supabaseDocumentService';
 import { processDocumentWithAI } from '../../services/aiProcessingService';
 
 interface DocumentUploadProps {

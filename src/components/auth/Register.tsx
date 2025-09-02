@@ -1,10 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 
 const Register: React.FC = () => {
-  const { signUp } = useAuth();
+  const { signUp } = useSupabaseAuth();
   const { translate } = useLanguage();
   const navigate = useNavigate();
   
@@ -57,7 +57,10 @@ const Register: React.FC = () => {
       setError('');
       setMessage('');
       setLoading(true);
-      await signUp(email, password, displayName);
+      const { user, error: authError } = await signUp(email, password);
+      if (authError) {
+        throw authError;
+      }
       setMessage('Registration successful! Please check your email (including spam folder) to verify your account. You will be redirected to login in 5 seconds.');
       // Navigate to login page after successful registration
       setTimeout(() => {
@@ -65,7 +68,7 @@ const Register: React.FC = () => {
       }, 5000); // Wait 5 seconds for user to read the message
     } catch (err: any) {
       console.error('Registration error:', err);
-      if (err.code === 'auth/email-already-in-use') {
+      if (err.message?.includes('User already registered')) {
         setError('Email is already in use');
       } else {
         setError('Failed to register. Please try again');
