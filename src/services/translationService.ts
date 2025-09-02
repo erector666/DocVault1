@@ -1,4 +1,5 @@
-import { supabase, Document } from './supabase';
+import { supabase } from './supabase';
+import { Document } from './documentService';
 
 export interface TranslationResult {
   translatedText: string;

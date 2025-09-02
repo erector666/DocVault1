@@ -1,7 +1,7 @@
 import React, { useState, useRef } from 'react';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage } from '../../context/LanguageContext';
-import { uploadDocument } from '../../services/supabase';
+import { uploadDocument } from '../../services/documentService';
 import { Document, DocumentUploadResult } from '../../types/document';
 import { useQueryClient } from '@tanstack/react-query';
 import { PDFConversionService } from '../../services/pdfConversionService';
@@ -98,7 +98,7 @@ const DocumentUpload: React.FC<DocumentUploadProps> = ({
             });
           }, 500);
 
-          if (onUploadComplete) {
+          if (onUploadComplete && document.id) {
             onUploadComplete(document.id);
           }
           

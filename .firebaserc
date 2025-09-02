@@ -1,8 +1,0 @@
-{
-  "projects": {
-    "production": "gpt1-77ce0",
-    "default": "gpt1-77ce0"
-  },
-  "targets": {},
-  "etags": {}
-}

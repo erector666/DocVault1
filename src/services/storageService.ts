@@ -11,8 +11,6 @@ export interface StorageUsage {
  */
 export const calculateStorageUsage = async (userId: string): Promise<StorageUsage> => {
   try {
-    console.log('Calculating storage for user:', userId);
-    
     // Get files from Supabase Storage bucket
     const { data: files, error: storageError } = await supabase.storage
       .from('documents')
@@ -20,8 +18,6 @@ export const calculateStorageUsage = async (userId: string): Promise<StorageUsag
         limit: 1000,
         sortBy: { column: 'created_at', order: 'desc' }
       });
-
-    console.log('Storage bucket query result:', { files, storageError });
 
     if (storageError) {
       console.error('Error querying Supabase storage bucket:', storageError);
@@ -33,8 +29,6 @@ export const calculateStorageUsage = async (userId: string): Promise<StorageUsag
       .select('size')
       .eq('user_id', userId);
 
-    console.log('Database query result:', { documents, dbError });
-
     let totalSize = 0;
     let documentCount = 0;
 
@@ -42,32 +36,24 @@ export const calculateStorageUsage = async (userId: string): Promise<StorageUsag
     if (files && files.length > 0) {
       totalSize = files.reduce((sum, file) => {
         const size = file.metadata?.size || 0;
-        console.log(`File: ${file.name}, Size: ${size}`);
         return sum + size;
       }, 0);
       documentCount = files.length;
-      console.log('Using storage bucket data:', { totalSize, documentCount, files });
     } 
     // Fallback to database data
     else if (documents && documents.length > 0) {
       totalSize = documents.reduce((sum, doc) => sum + (doc.size || 0), 0);
       documentCount = documents.length;
-      console.log('Using database data:', { totalSize, documentCount });
     }
     // If no data found, try to get bucket info
     else {
-      console.log('No files found in bucket or database. Checking bucket existence...');
       const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
-      console.log('Available buckets:', bucketList, bucketError);
       
       // Try to list all files in the documents bucket
       const { data: allFiles, error: allFilesError } = await supabase.storage
         .from('documents')
         .list('', { limit: 100 });
-      console.log('All files in documents bucket:', allFiles, allFilesError);
     }
-    
-    console.log('Final calculated storage:', { totalSize, documentCount });
     
     return {
       totalSize,

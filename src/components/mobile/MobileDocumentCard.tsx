@@ -62,7 +62,7 @@ const MobileDocumentCard: React.FC<MobileDocumentCardProps> = ({
       {/* Header */}
       <div className="flex items-start justify-between mb-3">
         <div className="flex items-start space-x-3 flex-1 min-w-0">
-          {getFileIcon(document.mimeType || document.type)}
+          {getFileIcon(document.type)}
           <div className="flex-1 min-w-0">
             <h3 
               className="text-sm font-medium text-gray-900 dark:text-white truncate cursor-pointer hover:text-blue-600 dark:hover:text-blue-400"
@@ -89,7 +89,7 @@ const MobileDocumentCard: React.FC<MobileDocumentCardProps> = ({
       {/* Metadata */}
       <div className="flex items-center justify-between text-xs text-gray-500 dark:text-gray-400 mb-3">
         <span>{formatFileSize(document.size)}</span>
-        <span>{formatDistanceToNow(new Date(document.createdAt || document.created_at), { addSuffix: true })}</span>
+        <span>{formatDistanceToNow(new Date(document.created_at), { addSuffix: true })}</span>
       </div>
 
       {/* AI Classification */}

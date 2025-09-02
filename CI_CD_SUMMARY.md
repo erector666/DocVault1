@@ -1,194 +1,173 @@
-# 🚀 CI/CD Pipeline Summary - GitHub → Firebase → Vercel
+# 🚀 CI/CD Pipeline Summary - GitHub → Supabase → Vercel
 
-## 📋 Overview
-Complete CI/CD pipeline that automatically deploys your React app from GitHub to Firebase (backend) and Vercel (frontend).
+## Overview
+
+Complete CI/CD pipeline that automatically deploys your React app from GitHub to Supabase (backend) and Vercel (frontend).
 
 ## 🔄 Pipeline Flow
-```
-GitHub Push → Code Quality → Firebase Backend → Vercel Frontend → Verification
-     ↓              ↓              ↓                ↓              ↓
-   Trigger      ESLint/TS      Functions        Build/Deploy   Health Check
-```
 
-## 📁 Files Created
+**GitHub Push → Code Quality → Supabase Backend → Vercel Frontend → Verification**
 
-### GitHub Actions Workflows
-- `.github/workflows/ci-cd-pipeline.yml` - Main production pipeline
-- `.github/workflows/development.yml` - Development and preview deployments
+## 🏗️ Architecture Components
 
-### Configuration Files
+### Backend (Supabase)
+- `supabase/config.toml` - Supabase project configuration
+- `supabase/migrations/001_initial_schema.sql` - Database schema and RLS policies
+- `supabase/functions/*` - Edge functions for AI processing
+- `supabase/seed.sql` - Initial seed data
+
+### Frontend (Vercel)
 - `vercel.json` - Vercel deployment configuration
-- `cors.json` - Firebase Storage CORS rules (updated)
-- `../functions/src/index.ts` - Firebase Functions CORS (updated)
+- `.github/workflows/development.yml` - GitHub Actions workflow
+- Environment variables for Supabase integration
 
-### Setup & Documentation
-- `scripts/setup-ci-cd.md` - Detailed setup guide
-- `scripts/setup-pipeline.sh` - Automated setup script
-- `CI_CD_SUMMARY.md` - This summary document
-
-## 🎯 Pipeline Features
-
-### Production Pipeline (main branch)
-- ✅ **Code Quality**: ESLint, TypeScript checks
-- ✅ **Testing**: Run tests if available
-- ✅ **Build**: Create production build
-- ✅ **Firebase Backend**: Deploy Functions, Storage Rules, Firestore Rules
-- ✅ **Vercel Frontend**: Deploy to production
-- ✅ **Verification**: Health checks and notifications
-- ✅ **PR Comments**: Automatic deployment notifications
-
-### Development Pipeline (feature branches)
-- ✅ **Code Quality**: Same as production
-- ✅ **Preview Deployments**: Automatic preview URLs for PRs
-- ✅ **Build Artifacts**: Store builds for 7 days
-
-## 🔧 Required Secrets
+## 🔑 Required Secrets
 
 ### GitHub Repository Secrets
+
 ```
-FIREBASE_TOKEN=your_firebase_ci_token
+SUPABASE_ACCESS_TOKEN=your_supabase_access_token
+SUPABASE_PROJECT_REF=your_project_reference_id
 VERCEL_TOKEN=your_vercel_token
 VERCEL_ORG_ID=your_vercel_org_id
 VERCEL_PROJECT_ID=your_vercel_project_id
-REACT_APP_FIREBASE_API_KEY=your_firebase_api_key
-REACT_APP_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-REACT_APP_FIREBASE_PROJECT_ID=your_project_id
-REACT_APP_FIREBASE_STORAGE_BUCKET=your_project.appspot.com
-REACT_APP_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
-REACT_APP_FIREBASE_APP_ID=your_app_id
-REACT_APP_FUNCTIONS_BASE_URL=https://us-central1-your_project_id.cloudfunctions.net
-GOOGLE_TRANSLATE_API_KEY=your_translate_api_key
 ```
 
-## 🚀 Quick Start
+### Environment Variables
 
-### 1. Generate Firebase Token
+```
+REACT_APP_SUPABASE_URL=https://your-project.supabase.co
+REACT_APP_SUPABASE_ANON_KEY=your_supabase_anon_key
+NODE_ENV=production
+REACT_APP_ENV=production
+REACT_APP_ENABLE_ANALYTICS=true
+REACT_APP_ENABLE_LOGGING=true
+```
+
+## 🚀 Deployment Process
+
+### 1. Code Quality Check
+- ESLint validation
+- TypeScript compilation
+- Unit tests execution
+- Build verification
+
+### 2. Supabase Backend Deployment
+- Database migrations (`supabase db push`)
+- Edge functions deployment (`supabase functions deploy`)
+- Storage policies deployment (`supabase storage deploy`)
+
+### 3. Vercel Frontend Deployment
+- Production build
+- Asset optimization
+- CDN deployment
+- Domain verification
+
+## 🔧 Manual Deployment Commands
+
+### Supabase Backend
 ```bash
-firebase login:ci
+# Deploy database changes
+supabase db push
+
+# Deploy edge functions
+supabase functions deploy
+
+# Deploy storage policies
+supabase storage deploy
+
+# Check status
+supabase status
 ```
 
-### 2. Get Vercel Configuration
+### Vercel Frontend
 ```bash
-vercel login
-vercel projects ls
-vercel teams ls
+# Deploy to production
+vercel --prod
+
+# Deploy preview
+vercel
+
+# Check deployment status
+vercel ls
 ```
 
-### 3. Configure GitHub Secrets
-Go to: `https://github.com/YOUR_USERNAME/YOUR_REPO/settings/secrets/actions`
-Add all the secrets listed above.
+## 🔍 Verification Steps
 
-### 4. Configure Firebase Auth Domains
-Add `docsort.vercel.app` to Firebase Auth authorized domains.
+### 1. Supabase Health Check
+- API endpoints responding
+- Database connectivity
+- Function execution
+- Storage access
 
-### 5. Test the Pipeline
-```bash
-git add .
-git commit -m "Add CI/CD pipeline"
-git push origin main
-```
+### 2. Vercel Health Check
+- Frontend accessible
+- Environment variables loaded
+- Build successful
+- Performance metrics
 
-## 📊 Branch Strategy
-
-### Main Branch (Production)
-- Triggers full CI/CD pipeline
-- Deploys to Firebase + Vercel production
-- Runs all tests and quality checks
-
-### Develop Branch (Staging)
-- Runs tests and builds
-- Creates preview deployments
-- No production deployment
-
-### Feature Branches
-- Runs tests and builds
-- Creates preview deployments for PRs
-- Automatic PR comments with preview URLs
-
-## 🔍 Monitoring
-
-### GitHub Actions
-- Monitor pipeline status in Actions tab
-- View logs and debug issues
-- Track deployment history
-
-### Firebase Console
-- Check Functions deployment status
-- Monitor Storage and Firestore rules
-- View function logs
-
-### Vercel Dashboard
-- Monitor frontend deployment
-- View build logs and performance
-- Check environment variables
-
-### Application URLs
-- **Production**: https://docsort.vercel.app
-- **Preview**: Generated per PR
-- **Local**: http://localhost:3000
-
-## 🛠️ Troubleshooting
+## 🚨 Troubleshooting
 
 ### Common Issues
 
-1. **Firebase Token Expired**
-   ```bash
-   firebase login:ci
-   ```
+1. **Supabase Token Expired**
+   - Generate new token: `supabase tokens new`
+   - Update GitHub secret
 
 2. **Vercel Deployment Fails**
-   - Check Vercel token and project ID
-   - Verify environment variables in Vercel dashboard
+   - Verify token and project IDs
+   - Check environment variables
+   - Ensure Vercel CLI is configured
 
-3. **Build Fails**
-   - Check TypeScript errors
-   - Verify all dependencies are installed
-
-4. **CORS Errors**
-   - Ensure Firebase Auth domains include Vercel domain
-   - Check Firebase Functions CORS configuration
+3. **Database Connection Issues**
+   - Verify Supabase project is active
+   - Check RLS policies
+   - Test database connectivity
 
 ### Debug Commands
+
 ```bash
-# Test Firebase deployment locally
-firebase deploy --only functions --dry-run
+# Supabase debugging
+supabase status
+supabase logs
+supabase db diff
 
-# Test Vercel deployment locally
-vercel --prod --dry-run
-
-# Check build locally
-npm run build
-npm run lint
-npm run type-check
+# Vercel debugging
+vercel whoami
+vercel project ls
+vercel env ls
 ```
 
-## 📈 Benefits
+## 📊 Monitoring
 
-### For Developers
-- ✅ **Automated Testing**: No manual testing required
-- ✅ **Preview Deployments**: Test changes before merging
-- ✅ **Quality Gates**: ESLint and TypeScript checks
-- ✅ **Fast Feedback**: Immediate deployment status
+### GitHub Actions
+- Build status notifications
+- Deployment success/failure alerts
+- Test coverage reports
 
-### For Production
-- ✅ **Zero Downtime**: Blue-green deployment strategy
-- ✅ **Rollback Capability**: Easy rollback to previous versions
-- ✅ **Health Monitoring**: Automatic health checks
-- ✅ **Security**: Environment variables and secrets management
+### Supabase Dashboard
+- Function execution metrics
+- Database performance
+- Storage usage statistics
 
-### For Business
-- ✅ **Faster Releases**: Automated deployment pipeline
-- ✅ **Reduced Errors**: Quality gates prevent bad deployments
-- ✅ **Better Collaboration**: Preview URLs for stakeholders
-- ✅ **Cost Effective**: No manual deployment overhead
+### Vercel Analytics
+- Frontend performance
+- User experience metrics
+- Error tracking
 
-## 🎉 Success Metrics
+## 🔄 Complete Flow
 
-- **Deployment Time**: < 5 minutes from push to live
-- **Success Rate**: > 95% successful deployments
-- **Rollback Time**: < 2 minutes for emergency rollbacks
-- **Developer Productivity**: 50% reduction in deployment tasks
+```
+GitHub Push → GitHub Actions → Build & Test → Deploy Supabase → Deploy Vercel → Live App
+```
+
+## 📚 Resources
+
+- [Supabase Documentation](https://supabase.com/docs)
+- [Vercel Documentation](https://vercel.com/docs)
+- [GitHub Actions](https://docs.github.com/en/actions)
+- [React Deployment](https://create-react-app.dev/docs/deployment/)
 
 ---
 
-**🎯 Ready to deploy! Follow the setup guide in `scripts/setup-ci-cd.md` to get started.**
+**Status**: ✅ CI/CD pipeline configured for Supabase + Vercel deployment

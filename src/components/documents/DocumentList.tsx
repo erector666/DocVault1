@@ -1,7 +1,8 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { FileText, Trash2, Share2, Edit3, Eye, Image, File, FileArchive, FileVideo, FileAudio } from 'lucide-react';
-import { deleteDocument, syncWithSupabase, supabase } from '../../services/supabase';
+import { deleteDocument } from '../../services/documentService';
+import { syncWithSupabase, supabase } from '../../services/supabase';
 import DocumentViewer from '../viewer/DocumentViewer';
 
 interface DocumentListProps {
@@ -27,7 +28,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ userId, category }) 
     
     try {
       setIsAutoSyncing(true);
-      console.log('🔄 Auto-syncing with Supabase...');
+      // Removed excessive logging - only log errors
       
       await syncWithSupabase(userId);
       
@@ -35,7 +36,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ userId, category }) 
       queryClient.invalidateQueries({ queryKey: ['documents'] });
       queryClient.invalidateQueries({ queryKey: ['storageUsage'] });
       
-      console.log('✅ Auto-sync completed');
+      // Removed success logging
     } catch (error) {
       console.error('❌ Auto-sync failed:', error);
     } finally {
@@ -66,7 +67,7 @@ export const DocumentList: React.FC<DocumentListProps> = ({ userId, category }) 
       if (error) throw error;
       return data || [];
     },
-    refetchOnWindowFocus: true, // Refresh when user returns to app
+    refetchOnWindowFocus: false, // Disabled to prevent spam
     refetchOnMount: true,
   });
 
@@ -77,18 +78,23 @@ export const DocumentList: React.FC<DocumentListProps> = ({ userId, category }) 
       autoSyncRef.current();
     }
     
-    // Set up periodic auto-sync - reduced frequency to prevent spam
+    // Set up periodic auto-sync - much less frequent
     const interval = setInterval(() => {
       if (autoSyncRef.current) {
         autoSyncRef.current();
       }
-    }, 300000); // Every 5 minutes instead of every minute
+    }, 600000); // Every 10 minutes instead of every 5 minutes
     
-    // Auto-sync when user returns to app
+    // Auto-sync when user returns to app - but only if they've been away for a while
+    let lastFocusTime = Date.now();
     const handleFocus = () => {
-      console.log('🔄 User returned to app, auto-syncing...');
-      if (autoSyncRef.current) {
-        autoSyncRef.current();
+      const now = Date.now();
+      // Only sync if user has been away for more than 5 minutes
+      if (now - lastFocusTime > 300000) {
+        if (autoSyncRef.current) {
+          autoSyncRef.current();
+        }
+        lastFocusTime = now;
       }
     };
     

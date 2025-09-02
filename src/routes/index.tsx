@@ -9,6 +9,7 @@ import Layout from '../components/layout/Layout';
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const CategoryView = React.lazy(() => import('../pages/CategoryView'));
 const DocumentView = React.lazy(() => import('../pages/DocumentView'));
+const Upload = React.lazy(() => import('../pages/Upload'));
 const NotFound = React.lazy(() => import('../pages/NotFound'));
 
 // Auth pages
@@ -78,6 +79,16 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <DocumentView />
+              </Layout>
+            </ProtectedRoute>
+          } 
+        />
+        <Route 
+          path="/upload" 
+          element={
+            <ProtectedRoute>
+              <Layout>
+                <Upload />
               </Layout>
             </ProtectedRoute>
           } 

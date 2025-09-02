@@ -1,38 +1,25 @@
-import { 
-  collection, 
-  addDoc, 
-  updateDoc, 
-  deleteDoc, 
-  doc, 
-  getDoc, 
-  getDocs, 
-  query, 
-  where, 
-  orderBy,
-  serverTimestamp
-} from 'firebase/firestore';
-import { 
-  ref, 
-  uploadBytesResumable, 
-  getDownloadURL, 
-  deleteObject
-} from 'firebase/storage';
-import { db, storage } from './firebase';
+import { supabase } from './supabase';
 import { clearStorageCache } from './storageService';
+import { classifyDocument, extractTextFromDocument, convertToPDF } from './classificationService';
 
 export interface Document {
-  id?: string;
+  id: string;
   name: string;
   type: string;
   size: number;
   url: string;
   path: string;
-  userId: string;
+  user_id: string;
   category?: string;
   tags?: string[];
-  uploadedAt: any;
-  lastModified?: any;
+  keywords?: string[];
+  confidence?: number;
+  document_type?: string;
+  language?: string;
+  ai_analysis?: any; // JSONB field for AI processing results
   metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DocumentUploadProgress {
@@ -41,7 +28,7 @@ export interface DocumentUploadProgress {
 }
 
 /**
- * Upload a document to Firebase Storage and save metadata to Firestore
+ * Upload a document to Supabase Storage and save metadata to database
  */
 export const uploadDocument = async (
   file: File, 
@@ -52,68 +39,131 @@ export const uploadDocument = async (
   onProgress?: (progress: DocumentUploadProgress) => void
 ): Promise<Document> => {
   try {
-    // Create a storage reference
-    const storageRef = ref(storage, `documents/${userId}/${Date.now()}_${file.name}`);
+    const fileName = `${Date.now()}_${file.name}`;
+    const filePath = `${userId}/${fileName}`;
     
-    // Upload file to Firebase Storage
-    const uploadTask = uploadBytesResumable(storageRef, file);
+    // Upload file to Supabase Storage
+    const { data: uploadData, error: uploadError } = await supabase.storage
+      .from('documents')
+      .upload(filePath, file);
+
+    if (uploadError) {
+      throw uploadError;
+    }
+
+    // Get public URL for the uploaded file
+    const { data: { publicUrl } } = supabase.storage
+      .from('documents')
+      .getPublicUrl(filePath);
+
+    // Create document metadata in database
+    const documentData: Omit<Document, 'id'> = {
+      name: file.name,
+      type: file.type,
+      size: file.size,
+      url: publicUrl,
+      path: filePath,
+      user_id: userId,
+      created_at: new Date().toISOString(),
+      updated_at: new Date().toISOString(),
+      ...(category && { category }),
+      ...(tags && { tags }),
+      ...(metadata && { metadata })
+    };
     
-    // Return a promise that resolves when the upload is complete
-    return new Promise((resolve, reject) => {
-      uploadTask.on(
-        'state_changed',
-        (snapshot) => {
-          // Track upload progress
-          const progress = (snapshot.bytesTransferred / snapshot.totalBytes) * 100;
-          if (onProgress) {
-            onProgress({ progress, snapshot });
-          }
-        },
-        (error) => {
-          // Handle upload errors
-          reject(error);
-        },
-        async () => {
-          // Upload completed successfully
-          try {
-            // Get download URL
-            const downloadURL = await getDownloadURL(uploadTask.snapshot.ref);
-            
-            // Create document metadata in Firestore
-            const documentData: Omit<Document, 'id'> = {
-              name: file.name,
-              type: file.type,
-              size: file.size,
-              url: downloadURL,
-              path: uploadTask.snapshot.ref.fullPath,
-              userId,
-              uploadedAt: serverTimestamp(),
-              lastModified: serverTimestamp(),
-              ...(category && { category }),
-              ...(tags && { tags }),
-              ...(metadata && { metadata })
-            };
-            
-            // Add document to Firestore
-            const docRef = await addDoc(collection(db, 'documents'), documentData);
-            
-            // Clear storage cache to reflect new upload
-            clearStorageCache(documentData.userId);
-            
-            // Return the document with its ID
-            resolve({
-              id: docRef.id,
-              ...documentData
-            });
-          } catch (error) {
-            reject(error);
-          }
-        }
-      );
+    // Add document to database
+    const { data: docData, error: insertError } = await supabase
+      .from('documents')
+      .insert(documentData)
+      .select()
+      .single();
+
+    if (insertError) {
+      throw insertError;
+    }
+
+    // Clear storage cache to reflect new upload
+    clearStorageCache(userId);
+    
+    // 🆕 Start AI processing pipeline in background
+    processDocumentWithAI(docData.id, publicUrl, file.type).catch(error => {
+      console.error('AI processing failed for document:', docData.id, error);
     });
+    
+    // Return the document with its ID
+    if (!docData.id) {
+      throw new Error('Document created but no ID returned');
+    }
+    
+    return {
+      id: docData.id,
+      ...documentData
+    };
   } catch (error) {
     console.error('Error uploading document:', error);
     throw error;
+  }
+};
+
+// 🆕 AI Processing Pipeline
+const processDocumentWithAI = async (documentId: string, documentUrl: string, documentType: string) => {
+  try {
+    console.log(`Starting AI processing for document: ${documentId}`);
+    
+    // Step 1: Extract text from document
+    const extractedText = await extractTextFromDocument(documentUrl, documentType);
+    console.log(`Text extraction completed for document: ${documentId}`);
+    
+    // Step 2: Classify document
+    const classification = await classifyDocument(documentId, documentUrl, documentType);
+    console.log(`Classification completed for document: ${documentId}`);
+    
+    // Step 3: Convert to PDF (if not already PDF)
+    let pdfUrl = documentUrl;
+    if (documentType !== 'application/pdf') {
+      const pdfResult = await convertToPDF(documentUrl, documentType, documentId);
+      pdfUrl = pdfResult.pdfUrl;
+      console.log(`PDF conversion completed for document: ${documentId}`);
+    }
+    
+    // Step 4: Update document with AI results
+    const aiAnalysis = {
+      extractedText: extractedText.extractedText,
+      classification: classification.classification,
+      pdfUrl,
+      processedAt: new Date().toISOString(),
+      confidence: classification.classification.confidence,
+      language: classification.classification.language,
+      summary: classification.classification.summary,
+      keywords: classification.classification.keywords,
+      wordCount: extractedText.wordCount,
+      characterCount: extractedText.characterCount
+    };
+    
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({
+        ai_analysis: aiAnalysis,
+        keywords: classification.classification.keywords,
+        language: classification.classification.language,
+        confidence: classification.classification.confidence,
+        document_type: classification.classification.categories[0] || 'Unknown'
+      })
+      .eq('id', documentId);
+      
+    if (updateError) {
+      throw updateError;
+    }
+    
+    console.log(`AI processing completed successfully for document: ${documentId}`);
+    
+  } catch (error) {
+    console.error('AI processing failed:', error);
+    // Update status to failed (you might want to add a status field to your schema)
+    // await supabase
+    //   .from('documents')
+    //   .update({ status: 'failed' })
+    //   .eq('id', documentId);
   }
 };
 
@@ -122,17 +172,21 @@ export const uploadDocument = async (
  */
 export const getDocument = async (documentId: string): Promise<Document | null> => {
   try {
-    const docRef = doc(db, `documents/${documentId}`);
-    const docSnap = await getDoc(docRef);
+    const { data: document, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
     
-    if (docSnap.exists()) {
-      return {
-        id: docSnap.id,
-        ...docSnap.data()
-      } as Document;
-    } else {
-      return null;
+    if (error) {
+      if (error.code === 'PGRST116') {
+        // No rows returned
+        return null;
+      }
+      throw error;
     }
+    
+    return document as Document;
   } catch (error) {
     console.error('Error getting document:', error);
     throw error;
@@ -155,40 +209,29 @@ export const getUserDocuments = async (
     console.log('Order By:', orderByField);
     console.log('Order Direction:', orderDirection);
 
-    let q = query(
-      collection(db, 'documents'),
-      where('userId', '==', userId),
-      orderBy(orderByField, orderDirection)
-    );
+    let query = supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', userId)
+      .order(orderByField, { ascending: orderDirection === 'asc' });
     
     if (category) {
-      q = query(
-        collection(db, 'documents'),
-        where('userId', '==', userId),
-        where('category', '==', category),
-        orderBy(orderByField, orderDirection)
-      );
+      query = query.eq('category', category);
     }
     
-    console.log('🔍 DEBUG - Query created:', q);
+    console.log('🔍 DEBUG - Query created for Supabase');
     
-    const querySnapshot = await getDocs(q);
-    console.log('🔍 DEBUG - Query result:', querySnapshot);
-    console.log('🔍 DEBUG - Number of documents found:', querySnapshot.size);
+    const { data: documents, error } = await query;
     
-    const documents: Document[] = [];
+    if (error) {
+      console.error('❌ ERROR in getUserDocuments:', error);
+      throw error;
+    }
     
-    querySnapshot.forEach((doc) => {
-      const docData = doc.data();
-      console.log('🔍 DEBUG - Document data:', doc.id, docData);
-      documents.push({
-        id: doc.id,
-        ...docData
-      } as Document);
-    });
-    
+    console.log('🔍 DEBUG - Number of documents found:', documents?.length || 0);
     console.log('🔍 DEBUG - Final documents array:', documents);
-    return documents;
+    
+    return (documents || []) as Document[];
   } catch (error) {
     console.error('❌ ERROR in getUserDocuments:', error);
     throw error;
@@ -203,15 +246,20 @@ export const updateDocument = async (
   updates: Partial<Document>
 ): Promise<void> => {
   try {
-    const docRef = doc(db, `documents/${documentId}`);
-    
     // Add last modified timestamp
     const updatedData = {
       ...updates,
-      lastModified: serverTimestamp()
+      updated_at: new Date().toISOString()
     };
     
-    await updateDoc(docRef, updatedData);
+    const { error } = await supabase
+      .from('documents')
+      .update(updatedData)
+      .eq('id', documentId);
+    
+    if (error) {
+      throw error;
+    }
   } catch (error) {
     console.error('Error updating document:', error);
     throw error;
@@ -219,31 +267,44 @@ export const updateDocument = async (
 };
 
 /**
- * Delete a document from Firestore and Storage
+ * Delete a document from database and Storage
  */
 export const deleteDocument = async (documentId: string): Promise<void> => {
   try {
     // Get document data to get the storage path
-    const docRef = doc(db, `documents/${documentId}`);
-    const docSnap = await getDoc(docRef);
+    const { data: document, error: fetchError } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('id', documentId)
+      .single();
     
-    if (!docSnap.exists()) {
+    if (fetchError || !document) {
       throw new Error('Document not found');
     }
     
-    const documentData = docSnap.data() as Document;
-    
     // Delete from Storage
-    if (documentData.path) {
-      const storageRef = ref(storage, documentData.path);
-      await deleteObject(storageRef);
+    if (document.path) {
+      const { error: storageError } = await supabase.storage
+        .from('documents')
+        .remove([document.path]);
+      
+      if (storageError) {
+        console.warn('Failed to delete from storage:', storageError);
+      }
     }
     
-    // Delete from Firestore
-    await deleteDoc(docRef);
+    // Delete from database
+    const { error: deleteError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', documentId);
+    
+    if (deleteError) {
+      throw deleteError;
+    }
     
     // Clear storage cache to reflect deletion
-    clearStorageCache(documentData.userId);
+    clearStorageCache(document.userId);
   } catch (error) {
     console.error('Error deleting document:', error);
     throw error;
@@ -260,32 +321,26 @@ export const searchDocuments = async (
   try {
     // For basic search, we'll just query by userId and filter client-side
     // In a production app, you would use a more sophisticated search solution like Algolia
-    const q = query(
-      collection(db, 'documents'),
-      where('userId', '==', userId),
-      orderBy('uploadedAt', 'desc')
-    );
+    const { data: documents, error } = await supabase
+      .from('documents')
+      .select('*')
+      .eq('user_id', userId)
+      .order('created_at', { ascending: false });
     
-    const querySnapshot = await getDocs(q);
-    const documents: Document[] = [];
+    if (error) {
+      throw error;
+    }
     
-    querySnapshot.forEach((doc) => {
-      const data = doc.data() as Document;
-      
-      // Simple client-side filtering
-      if (
-        data.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        (data.tags && data.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) ||
-        (data.metadata && data.metadata.content && data.metadata.content.toLowerCase().includes(searchTerm.toLowerCase()))
-      ) {
-        documents.push({
-          id: doc.id,
-          ...data
-        });
-      }
+    // Simple client-side filtering
+    const filteredDocuments = (documents || []).filter((doc: Document) => {
+      return (
+        doc.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        (doc.tags && doc.tags.some(tag => tag.toLowerCase().includes(searchTerm.toLowerCase()))) ||
+        (doc.metadata && doc.metadata.content && doc.metadata.content.toLowerCase().includes(searchTerm.toLowerCase()))
+      );
     });
     
-    return documents;
+    return filteredDocuments as Document[];
   } catch (error) {
     console.error('Error searching documents:', error);
     throw error;
@@ -297,18 +352,20 @@ export const searchDocuments = async (
  */
 export const getDocumentCategories = async (userId: string): Promise<string[]> => {
   try {
-    const q = query(
-      collection(db, 'documents'),
-      where('userId', '==', userId)
-    );
+    const { data: documents, error } = await supabase
+      .from('documents')
+      .select('category')
+      .eq('user_id', userId)
+      .not('category', 'is', null);
     
-    const querySnapshot = await getDocs(q);
+    if (error) {
+      throw error;
+    }
+    
     const categories = new Set<string>();
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.category) {
-        categories.add(data.category);
+    (documents || []).forEach((doc: any) => {
+      if (doc.category) {
+        categories.add(doc.category);
       }
     });
     
@@ -324,18 +381,20 @@ export const getDocumentCategories = async (userId: string): Promise<string[]> =
  */
 export const getDocumentTags = async (userId: string): Promise<string[]> => {
   try {
-    const q = query(
-      collection(db, 'documents'),
-      where('userId', '==', userId)
-    );
+    const { data: documents, error } = await supabase
+      .from('documents')
+      .select('tags')
+      .eq('user_id', userId)
+      .not('tags', 'is', null);
     
-    const querySnapshot = await getDocs(q);
+    if (error) {
+      throw error;
+    }
+    
     const tags = new Set<string>();
-    
-    querySnapshot.forEach((doc) => {
-      const data = doc.data();
-      if (data.tags && Array.isArray(data.tags)) {
-        data.tags.forEach((tag: string) => tags.add(tag));
+    (documents || []).forEach((doc: any) => {
+      if (doc.tags && Array.isArray(doc.tags)) {
+        doc.tags.forEach((tag: string) => tags.add(tag));
       }
     });
     

@@ -1,4 +1,5 @@
-import { supabase, Document } from './supabase';
+import { supabase } from './supabase';
+import { Document } from './documentService';
 
 export const uploadDocument = async (
   file: File,

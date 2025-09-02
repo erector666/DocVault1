@@ -378,6 +378,21 @@ const defaultTranslations: Translations = {
     mk: 'Изберете датотеки за прикачување',
     fr: 'Veuillez sélectionner des fichiers à télécharger',
   },
+  'upload.dragDrop': {
+    en: 'Drag and drop files here',
+    mk: 'Повлечете ги датотеките овде',
+    fr: 'Glissez et déposez les fichiers ici',
+  },
+  'upload.or': {
+    en: 'or',
+    mk: 'или',
+    fr: 'ou',
+  },
+  'upload.button': {
+    en: 'Upload',
+    mk: 'Прикачи',
+    fr: 'Télécharger',
+  },
   // Missing translation keys
   'manage_documents': {
     en: 'Manage Documents',

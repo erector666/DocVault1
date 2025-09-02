@@ -1,5 +1,5 @@
 import { supabase } from './supabase';
-import { Document } from './supabase';
+import { Document } from './documentService';
 
 export interface SearchResult {
   documents: Document[];

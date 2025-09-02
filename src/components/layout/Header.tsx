@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage, LanguageType } from '../../context/LanguageContext';
-import { useUploadModal } from '../../context/UploadModalContext';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from '../ui/ThemeToggle';
 
@@ -11,7 +10,6 @@ interface HeaderProps {
 
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { language, setLanguage, translate } = useLanguage();
-  const { openModal } = useUploadModal();
   const { logout, currentUser } = useSupabaseAuth();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
@@ -76,17 +74,6 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
         {/* Right side actions */}
         <div className="flex items-center space-x-2 md:space-x-3 flex-shrink-0">
-          {/* Upload Button - Hidden on small mobile, shown on larger mobile */}
-          <button 
-            onClick={openModal}
-            className="hidden sm:flex bg-primary-600 hover:bg-primary-700 text-white font-medium h-10 px-3 md:px-4 rounded-lg items-center transition-colors touch-manipulation"
-          >
-            <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
-            </svg>
-            <span className="hidden md:inline">{translate('upload')}</span>
-          </button>
-          
           {/* Theme toggle */}
           <ThemeToggle size="md" />
 

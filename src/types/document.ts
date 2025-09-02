@@ -1,39 +1,25 @@
 export interface Document {
   id: string;
   name: string;
-  url: string;
-  size: number;
   type: string;
-  mimeType?: string;
-  category?: string;
-  ai_category?: string;
-  ai_confidence?: number;
-  ai_keywords?: string[];
-  extracted_text?: string;
-  language?: string;
+  size: number;
+  url: string;
+  path: string;
   user_id: string;
-  created_at: string;
-  updated_at: string;
-  createdAt?: string;
-  uploadedAt?: string;
+  category?: string;
   tags?: string[];
-  metadata?: {
-    language?: string;
-    isTranslation?: boolean;
-    originalDocumentId?: string;
-    sourceLanguage?: string;
-    targetLanguage?: string;
-    translationConfidence?: number;
-    translations?: Record<string, any>;
-    confidence?: number;
-    extractedText?: string;
-    keywords?: string[];
-    documentType?: string;
-  };
+  keywords?: string[];
+  confidence?: number;
+  document_type?: string;
+  language?: string;
+  ai_analysis?: any; // JSONB field for AI processing results
   aiClassification?: {
     category: string;
     confidence: number;
   };
+  metadata?: Record<string, any>;
+  created_at: string;
+  updated_at: string;
 }
 
 export interface DocumentUploadResult {

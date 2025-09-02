@@ -1,44 +1,14 @@
 import { createClient } from '@supabase/supabase-js';
 import { classifyDocument, extractTextFromDocument } from './aiService';
 import { performSecurityCheck } from './virusScanner';
+import { Document } from './documentService';
 
 const supabaseUrl = process.env.REACT_APP_SUPABASE_URL!;
 const supabaseAnonKey = process.env.REACT_APP_SUPABASE_ANON_KEY!;
 
 export const supabase = createClient(supabaseUrl, supabaseAnonKey);
 
-// Database types
-export interface Document {
-  id: string;
-  name: string;
-  type: string;
-  size: number;
-  url: string;
-  user_id: string;
-  category?: string;
-  tags?: string[];
-  keywords?: string[];
-  confidence?: number;
-  document_type?: string;
-  language?: string;
-  ai_analysis?: any;
-  created_at: string;
-  updated_at: string;
-  metadata?: {
-    language?: string;
-    isTranslation?: boolean;
-    originalDocumentId?: string;
-    sourceLanguage?: string;
-    targetLanguage?: string;
-    translationConfidence?: number;
-    translations?: {
-      [languageCode: string]: {
-        timestamp: number;
-        confidence: number;
-      };
-    };
-  };
-}
+// Document interface moved to documentService.ts
 
 export interface Category {
   id: string;
@@ -149,7 +119,7 @@ export const syncWithSupabase = async (userId: string): Promise<{
   orphanedFilesRemoved: number;
 }> => {
   try {
-    console.log('Starting Supabase sync for user:', userId);
+    // Removed excessive logging - only log errors
     
     let orphanedRecordsRemoved = 0;
     let orphanedFilesRemoved = 0;
@@ -165,11 +135,11 @@ export const syncWithSupabase = async (userId: string): Promise<{
     }
 
     if (!documents || documents.length === 0) {
-      console.log('No documents found for user');
+      // Removed logging - no documents is normal for new users
       return { orphanedRecordsRemoved: 0, orphanedFilesRemoved: 0 };
     }
 
-    console.log(`Checking ${documents.length} documents for consistency...`);
+    // Removed document count logging
 
     // Check each document's storage file
     for (const document of documents) {
@@ -199,7 +169,7 @@ export const syncWithSupabase = async (userId: string): Promise<{
 
         // If file doesn't exist in storage, remove the database record
         if (!fileExists || fileExists.length === 0) {
-          console.log(`Removing orphaned database record for: ${document.name}`);
+          // Removed orphaned record logging
           
           const { error: deleteError } = await supabase
             .from('documents')
@@ -230,7 +200,7 @@ export const syncWithSupabase = async (userId: string): Promise<{
           const hasRecord = documents.some(doc => doc.name === fileName);
 
           if (!hasRecord) {
-            console.log(`Removing orphaned storage file: ${fileName}`);
+            // Removed orphaned file logging
             
             const { error: removeError } = await supabase.storage
               .from('documents')
@@ -351,198 +321,8 @@ const performFileValidation = (file: File): void => {
   }
 };
 
-export const uploadDocument = async (
-  file: File,
-  userId: string,
-  onProgress?: (progress: number) => void
-): Promise<Document> => {
-  try {
-    // Perform comprehensive security check including virus scanning
-    const securityCheck = await performSecurityCheck(file);
-    if (!securityCheck.passed) {
-      throw new Error(`Security check failed: ${securityCheck.issues.join(', ')}`);
-    }
-    
-    const fileName = `${Date.now()}-${file.name}`;
-    const filePath = `${userId}/${fileName}`;
+// uploadDocument function moved to documentService.ts
 
-    if (onProgress) onProgress(10);
+// getDocument function moved to documentService.ts
 
-    // Extract text from document first
-    const extractedText = await extractTextFromDocument(file);
-    
-    if (onProgress) onProgress(40);
-    
-    // Classify document based on filename and extracted text
-    const classification = await classifyDocument(file.name, file.type, extractedText);
-
-    if (onProgress) onProgress(60);
-
-    // Upload file to storage
-    const { error: uploadError } = await supabase.storage
-      .from('documents')
-      .upload(filePath, file, {
-        cacheControl: '3600',
-        upsert: false
-      });
-
-    if (uploadError) {
-      throw new Error(`Upload failed: ${uploadError.message}`);
-    }
-
-    if (onProgress) onProgress(80);
-
-    // Get public URL
-    const { data: { publicUrl } } = supabase.storage
-      .from('documents')
-      .getPublicUrl(filePath);
-
-    // Create document record in database with AI classification
-    const documentData = {
-      name: file.name,
-      type: file.type,
-      size: file.size,
-      url: publicUrl,
-      user_id: userId,
-      category: classification.category,
-      ai_analysis: {
-        extractedText: extractedText,
-        classification: classification,
-        processedAt: new Date().toISOString(),
-        fileValidation: {
-          validated: true,
-          validatedAt: new Date().toISOString()
-        }
-      }
-    };
-
-    const { data: document, error: dbError } = await supabase
-      .from('documents')
-      .insert([documentData])
-      .select()
-      .single();
-
-    if (dbError) {
-      // Clean up uploaded file if database insert fails
-      await supabase.storage.from('documents').remove([filePath]);
-      throw new Error(`Database error: ${dbError.message}`);
-    }
-
-    if (onProgress) onProgress(100);
-
-    return document as Document;
-  } catch (error) {
-    console.error('Error uploading document:', error);
-    throw error;
-  }
-};
-
-export const getDocument = async (documentId: string): Promise<Document | null> => {
-  const { data, error } = await supabase
-    .from('documents')
-    .select('*')
-    .eq('id', documentId)
-    .single();
-
-  if (error) {
-    if (error.code === 'PGRST116') {
-      // No rows found
-      return null;
-    }
-    throw new Error(error.message);
-  }
-
-  return data;
-};
-
-export const deleteDocument = async (documentId: string): Promise<void> => {
-  try {
-    // First, get the document details
-    const { data: document, error: fetchError } = await supabase
-      .from('documents')
-      .select('url, user_id, name')
-      .eq('id', documentId)
-      .single();
-
-    if (fetchError) {
-      throw new Error(`Failed to fetch document: ${fetchError.message}`);
-    }
-
-    if (!document) {
-      throw new Error('Document not found');
-    }
-
-    console.log('Deleting document:', document.name, 'with URL:', document.url);
-
-    // Extract file path from URL more reliably
-    let filePath: string;
-    
-    if (document.url.includes('/storage/v1/object/public/documents/')) {
-      // New public URL format: https://.../storage/v1/object/public/documents/userId/filename
-      filePath = document.url.split('/storage/v1/object/public/documents/')[1];
-    } else if (document.url.includes('/object/public/documents/')) {
-      // Alternative public URL format
-      filePath = document.url.split('/object/public/documents/')[1];
-    } else {
-      // Fallback - construct path from user_id and filename
-      filePath = `${document.user_id}/${document.name}`;
-    }
-
-    console.log('Extracted file path:', filePath);
-
-    // Try multiple path variations to ensure deletion
-    const possiblePaths = [
-      filePath,
-      `${document.user_id}/${document.name}`,
-      document.name,
-      filePath.replace(/^[^\/]+\//, ''), // Remove user_id prefix if present
-    ];
-
-    console.log('Attempting deletion with paths:', possiblePaths);
-
-    // Delete from storage using multiple path attempts
-    let storageDeleted = false;
-    for (const path of possiblePaths) {
-      try {
-        const { error: storageError } = await supabase.storage
-          .from('documents')
-          .remove([path]);
-        
-        if (!storageError) {
-          console.log(`Successfully deleted storage file at path: ${path}`);
-          storageDeleted = true;
-          break;
-        } else {
-          console.log(`Storage deletion failed for path ${path}:`, storageError.message);
-        }
-      } catch (error) {
-        console.log(`Error trying path ${path}:`, error);
-      }
-    }
-
-    if (!storageDeleted) {
-      console.warn('Storage deletion failed for all attempted paths');
-    }
-
-    // Delete from database
-    const { error: dbError } = await supabase
-      .from('documents')
-      .delete()
-      .eq('id', documentId);
-
-    if (dbError) {
-      throw new Error(`Database deletion failed: ${dbError.message}`);
-    }
-
-    console.log('Successfully deleted document from database');
-
-    // If storage deletion failed, log it but don't fail the operation
-    if (!storageDeleted) {
-      console.warn('Document deleted from database but storage cleanup may be incomplete');
-    }
-
-  } catch (error) {
-    console.error('Error in deleteDocument:', error);
-    throw error;
-  }
-};
+// deleteDocument function moved to documentService.ts

@@ -1,13 +1,12 @@
 
-import { getAuth } from 'firebase/auth';
+import { supabase } from './supabase';
 
 // Helper function to get auth token
 const getAuthToken = async (): Promise<string | null> => {
   try {
-    const auth = getAuth();
-    const user = auth.currentUser;
-    if (!user) return null;
-    return await user.getIdToken();
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session) return null;
+    return session.access_token;
   } catch (error) {
     console.error('Error getting auth token:', error);
     return null;

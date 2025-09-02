@@ -1,8 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
-import { storage } from '../../services/firebase';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { updateProfile } from 'firebase/auth';
 
 const Profile: React.FC = () => {
   const { currentUser, updateProfile } = useSupabaseAuth();

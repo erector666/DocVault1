@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { supabase, Document } from '../../services/supabase';
+import { supabase } from '../../services/supabase';
+import { Document } from '../../services/documentService';
 
 interface DocumentViewerProps {
   documentId?: string;

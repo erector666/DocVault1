@@ -112,6 +112,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
             </NavLink>
           </li>
 
+          {/* Quick Upload Button */}
+          <li className="pt-2">
+            <NavLink 
+              to="/upload" 
+              onClick={handleLinkClick}
+              className="flex items-center p-3 rounded-lg transition-colors touch-manipulation bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300 hover:bg-primary-200 dark:hover:bg-primary-800"
+            >
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 md:h-8 md:w-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 16a4 4 0 01-.88-7.903A5 5 0 1115.9 6L16 6a5 5 0 011 9.9M15 13l-3-3m0 0l-3 3m3-3v12" />
+              </svg>
+              <span className="ml-3 text-base md:text-lg">
+                Upload Documents
+              </span>
+            </NavLink>
+          </li>
+
           {/* Categories */}
           <li className="pt-4">
             <div className="flex items-center px-2 mb-2">
