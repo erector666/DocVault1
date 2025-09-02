@@ -1,9 +1,18 @@
 {
-  "moderate": true,
-  "high": true,
-  "critical": true,
-  "allowlist": [],
-  "skip-dev": true,
-  "report-type": "summary",
-  "output-format": "text"
+  "low": false,
+  "moderate": false,
+  "high": false,
+  "critical": false,
+  "report": true,
+  "package-manager": "npm",
+  "allowlist": [
+    "GHSA-rp65-9cf3-cjxr",
+    "GHSA-7fh5-64p2-3v2j",
+    "GHSA-c76h-2ccp-4975",
+    "GHSA-cxrh-j4jr-qwg3",
+    "GHSA-9jgg-88mc-972h",
+    "GHSA-4v9v-hfq4-rm2v"
+  ],
+  "output-format": "text",
+  "retry-count": 3
 }

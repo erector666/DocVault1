@@ -16,6 +16,9 @@ const Login = React.lazy(() => import('../components/auth/Login'));
 const Register = React.lazy(() => import('../components/auth/Register'));
 const ForgotPassword = React.lazy(() => import('../components/auth/ForgotPassword'));
 
+// TestSprite Integration Testing (Development Only)
+const TestSpriteRunner = React.lazy(() => import('../tests/TestSpriteRunner'));
+
 // Loading component for lazy-loaded routes
 const LoadingFallback = () => (
   <div className="flex items-center justify-center h-screen">
@@ -35,6 +38,19 @@ const AppRoutes: React.FC = () => {
         <Route path="/register" element={!currentUser ? <Register /> : <Navigate to="/dashboard" replace />} />
         <Route path="/forgot-password" element={!currentUser ? <ForgotPassword /> : <Navigate to="/dashboard" replace />} />
         <Route path="/splash" element={<SplashScreen />} />
+        
+        {/* TestSprite Integration Testing Route (Development Only) */}
+        <Route 
+          path="/testsprite" 
+          element={
+            process.env.NODE_ENV === 'development' ? (
+              <TestSpriteRunner />
+            ) : (
+              <Navigate to="/" replace />
+            )
+          } 
+        />
+        
         {/* Protected routes */}
         <Route 
           path="/dashboard" 

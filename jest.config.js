@@ -14,7 +14,7 @@ module.exports = {
   moduleFileExtensions: ['ts', 'tsx', 'js', 'jsx', 'json', 'node'],
   testMatch: [
     '<rootDir>/src/**/__tests__/**/*.(ts|tsx|js)',
-    '<rootDir>/src/**/?(*.)(spec|test).(ts|tsx|js)'
+    '<rootDir>/src/**/*.(spec|test).(ts|tsx|js)'
   ],
   collectCoverageFrom: [
     'src/**/*.{ts,tsx}',
@@ -27,6 +27,9 @@ module.exports = {
   coverageReporters: ['text', 'lcov', 'html'],
   coverageDirectory: 'coverage',
   testTimeout: 10000,
+  testEnvironmentOptions: {
+    url: 'http://localhost'
+  },
   globals: {
     'ts-jest': {
       tsconfig: {

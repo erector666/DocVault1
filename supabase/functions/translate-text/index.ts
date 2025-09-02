@@ -14,7 +14,7 @@ serve(async (req) => {
     const { text, targetLanguage, sourceLanguage = 'auto' } = await req.json()
 
     // Google Translate API endpoint
-    const apiKey = Deno.env.get('GOOGLE_TRANSLATE_API_KEY')
+    const apiKey = Deno.env.get('GOOGLE_TRANSLATE_API_KEY') || 'AIzaSyB9-fp3cRPul2gSP9QKEOykzJoox9q9cFY';
     if (!apiKey) {
       throw new Error('Google Translate API key not configured')
     }

@@ -75,11 +75,7 @@ const Dashboard: React.FC = () => {
       />
 
       {/* Document List */}
-      <DocumentList 
-        searchTerm={searchTerm}
-        category={selectedCategory === 'ALL' ? undefined : selectedCategory}
-        onViewDocument={handleDocumentClick}
-      />
+      <DocumentList userId={currentUser?.id || ''} />
 
       {/* Upload Modal */}
       <UploadModal 

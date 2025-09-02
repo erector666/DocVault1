@@ -4,6 +4,7 @@ import { useQuery } from '@tanstack/react-query';
 import { useLanguage } from '../../context/LanguageContext';
 import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { getStorageUsage } from '../../services/storageService';
+import { getCategoryStats } from '../../services/aiService';
 
 interface SidebarProps {
   isMobile?: boolean;
@@ -32,15 +33,27 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
     staleTime: 10000, // Consider data stale after 10 seconds
   });
 
+  // Fetch category statistics for document counts
+  const { data: categoryStats = {} } = useQuery({
+    queryKey: ['category-stats', currentUser?.id],
+    queryFn: () => getCategoryStats(currentUser?.id || ''),
+    enabled: !!currentUser?.id,
+    refetchInterval: 30000, // Refetch every 30 seconds
+  });
+
   const totalStorage = 1 * 1024 * 1024 * 1024; // 1 GB in bytes (Supabase free tier)
   const usedStorage = storageData?.totalSize ?? 0;
   const usagePercentage = totalStorage > 0 ? (usedStorage / totalStorage) * 100 : 0;
-
 
   const handleLinkClick = () => {
     if (isMobile && onClose) {
       onClose();
     }
+  };
+
+  // Get total document count
+  const getTotalCount = () => {
+    return Object.values(categoryStats).reduce((sum, count) => sum + count, 0);
   };
 
   return (
@@ -107,40 +120,73 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
               </span>
             </div>
 
+            {/* All Documents */}
+            <NavLink 
+              to="/dashboard" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">📁</span>
+                <span className="ml-3 text-sm">All Documents</span>
+              </div>
+              {getTotalCount() > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-blue-100 dark:bg-blue-800 text-blue-700 dark:text-blue-300">
+                  {getTotalCount()}
+                </span>
+              )}
+            </NavLink>
+
             {/* Personal */}
             <NavLink 
               to="/category/personal" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <span className="text-3xl">📄</span>
-              <span className="ml-3">
-                {translate('personal')}
-              </span>
+              <div className="flex items-center">
+                <span className="text-2xl">👤</span>
+                <span className="ml-3 text-sm">Personal</span>
+              </div>
+              {(categoryStats['Personal'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Personal']}
+                </span>
+              )}
             </NavLink>
 
-            {/* Bills */}
+            {/* Bills & Utilities */}
             <NavLink 
               to="/category/bills" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <span className="text-3xl">💰</span>
-              <span className="ml-3">
-                {translate('bills')}
-              </span>
+              <div className="flex items-center">
+                <span className="text-2xl">💡</span>
+                <span className="ml-3 text-sm">Bills & Utilities</span>
+              </div>
+              {(categoryStats['Bills & Utilities'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Bills & Utilities']}
+                </span>
+              )}
             </NavLink>
 
             {/* Medical */}
@@ -148,17 +194,137 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
               to="/category/medical" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <span className="text-3xl">🏥</span>
-              <span className="ml-3">
-                {translate('medical')}
-              </span>
+              <div className="flex items-center">
+                <span className="text-2xl">🏥</span>
+                <span className="ml-3 text-sm">Medical</span>
+              </div>
+              {(categoryStats['Medical'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Medical']}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Legal */}
+            <NavLink 
+              to="/category/legal" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">⚖️</span>
+                <span className="ml-3 text-sm">Legal</span>
+              </div>
+              {(categoryStats['Legal'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Legal']}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Financial */}
+            <NavLink 
+              to="/category/financial" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">💰</span>
+                <span className="ml-3 text-sm">Financial</span>
+              </div>
+              {(categoryStats['Financial'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Financial']}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Work & Business */}
+            <NavLink 
+              to="/category/work" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">💼</span>
+                <span className="ml-3 text-sm">Work & Business</span>
+              </div>
+              {(categoryStats['Work & Business'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Work & Business']}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Education */}
+            <NavLink 
+              to="/category/education" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">🎓</span>
+                <span className="ml-3 text-sm">Education</span>
+              </div>
+              {(categoryStats['Education'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Education']}
+                </span>
+              )}
+            </NavLink>
+
+            {/* Travel */}
+            <NavLink 
+              to="/category/travel" 
+              onClick={handleLinkClick}
+              className={({ isActive }) => 
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
+                  isActive 
+                    ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
+                    : 'hover:bg-gray-100 dark:hover:bg-gray-700'
+                }`
+              }
+            >
+              <div className="flex items-center">
+                <span className="text-2xl">✈️</span>
+                <span className="ml-3 text-sm">Travel</span>
+              </div>
+              {(categoryStats['Travel'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Travel']}
+                </span>
+              )}
             </NavLink>
 
             {/* Insurance */}
@@ -166,17 +332,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
               to="/category/insurance" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <span className="text-3xl">🔒</span>
-              <span className="ml-3">
-                {translate('insurance')}
-              </span>
+              <div className="flex items-center">
+                <span className="text-2xl">🛡️</span>
+                <span className="ml-3 text-sm">Insurance</span>
+              </div>
+              {(categoryStats['Insurance'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Insurance']}
+                </span>
+              )}
             </NavLink>
 
             {/* Other */}
@@ -184,17 +355,22 @@ const Sidebar: React.FC<SidebarProps> = ({ isMobile = false, onClose }) => {
               to="/category/other" 
               onClick={handleLinkClick}
               className={({ isActive }) => 
-                `flex items-center p-2 rounded-lg transition-colors ${
+                `flex items-center justify-between p-2 rounded-lg transition-colors ${
                   isActive 
                     ? 'bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-300' 
                     : 'hover:bg-gray-100 dark:hover:bg-gray-700'
                 }`
               }
             >
-              <span className="text-3xl">📁</span>
-              <span className="ml-3">
-                {translate('other')}
-              </span>
+              <div className="flex items-center">
+                <span className="text-2xl">📄</span>
+                <span className="ml-3 text-sm">Other</span>
+              </div>
+              {(categoryStats['Other'] || 0) > 0 && (
+                <span className="text-xs px-2 py-1 rounded-full bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400">
+                  {categoryStats['Other']}
+                </span>
+              )}
             </NavLink>
           </li>
         </ul>

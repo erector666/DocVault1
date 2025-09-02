@@ -3,69 +3,113 @@ import { useLanguage } from '../../context/LanguageContext';
 import { supabase, Document } from '../../services/supabase';
 
 interface DocumentViewerProps {
-  documentId: string;
+  documentId?: string;
+  document?: Document;
+  isOpen?: boolean;
   onClose?: () => void;
 }
 
-const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) => {
+const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, document: propDocument, isOpen = true, onClose }) => {
   const { translate } = useLanguage();
-  const [document, setDocument] = useState<Document | null>(null);
-  const [loading, setLoading] = useState<boolean>(true);
+  const [document, setDocument] = useState<Document | null>(propDocument || null);
+  const [loading, setLoading] = useState<boolean>(!propDocument);
   const [error, setError] = useState<string | null>(null);
   const [viewerType, setViewerType] = useState<'pdf' | 'image' | 'text' | 'other'>('other');
 
   useEffect(() => {
-    const fetchDocument = async () => {
-      try {
-        setLoading(true);
-        setError(null);
+    // If we have a document prop, use it directly
+    if (propDocument) {
+      setDocument(propDocument);
+      setLoading(false);
+      determineViewerType(propDocument);
+      return;
+    }
 
-        // Get document metadata from Supabase
-        const { data: documentData, error: fetchError } = await supabase
-          .from('documents')
-          .select('*')
-          .eq('id', documentId)
-          .single();
-
-        if (fetchError || !documentData) {
-          console.error('Document fetch error:', fetchError);
-          setError(translate('viewer.error.notFound'));
-          setLoading(false);
-          return;
-        }
-
-        // Determine viewer type based on file type
-        if (documentData.type === 'application/pdf') {
-          setViewerType('pdf');
-        } else if (documentData.type.startsWith('image/')) {
-          setViewerType('image');
-        } else if (
-          documentData.type === 'text/plain' ||
-          documentData.type === 'text/html' ||
-          documentData.type === 'application/json'
-        ) {
-          setViewerType('text');
-        } else {
-          setViewerType('other');
-        }
-
-        setDocument(documentData);
-        setLoading(false);
-      } catch (err) {
-        console.error('Error fetching document:', err);
-        setError(translate('viewer.error.fetchFailed'));
-        setLoading(false);
-      }
-    };
-
+    // Otherwise fetch by ID
     if (documentId) {
       fetchDocument();
     }
-  }, [documentId, translate]);
+  }, [documentId, propDocument]);
+
+  const determineViewerType = (doc: Document) => {
+    if (doc.type === 'application/pdf') {
+      setViewerType('pdf');
+    } else if (doc.type.startsWith('image/')) {
+      setViewerType('image');
+    } else if (
+      doc.type === 'text/plain' ||
+      doc.type === 'text/html' ||
+      doc.type === 'application/json'
+    ) {
+      setViewerType('text');
+    } else {
+      setViewerType('other');
+    }
+  };
+
+  const fetchDocument = async () => {
+    try {
+      setLoading(true);
+      setError(null);
+
+      // Get document metadata from Supabase
+      const { data: documentData, error: fetchError } = await supabase
+        .from('documents')
+        .select('*')
+        .eq('id', documentId)
+        .single();
+
+      if (fetchError || !documentData) {
+        console.error('Document fetch error:', fetchError);
+        setError(translate('viewer.error.notFound'));
+        setLoading(false);
+        return;
+      }
+
+      determineViewerType(documentData);
+      setDocument(documentData);
+      setLoading(false);
+    } catch (err) {
+      console.error('Error fetching document:', err);
+      setError(translate('viewer.error.fetchFailed'));
+      setLoading(false);
+    }
+  };
+
+  // If not open, don't render
+  if (!isOpen) return null;
+
+  if (loading) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4">
+          <div className="flex items-center justify-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500"></div>
+            <span className="ml-2">Loading document...</span>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (error || !document) {
+    return (
+      <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center">
+        <div className="bg-white dark:bg-gray-800 rounded-lg p-6 max-w-md mx-4">
+          <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">Error</h3>
+          <p className="text-gray-600 dark:text-gray-400 mb-4">{error || 'Document not found'}</p>
+          <button
+            onClick={onClose}
+            className="w-full px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+          >
+            Close
+          </button>
+        </div>
+      </div>
+    );
+  }
 
   const renderViewer = () => {
-    if (!document) return null;
-
     switch (viewerType) {
       case 'pdf':
         return (
@@ -98,148 +142,54 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) 
         );
       default:
         return (
-          <div className="flex flex-col items-center justify-center h-full p-8 text-center">
-            <svg
-              xmlns="http://www.w3.org/2000/svg"
-              className="h-16 w-16 text-gray-400 mb-4"
-              fill="none"
-              viewBox="0 0 24 24"
-              stroke="currentColor"
-            >
-              <path
-                strokeLinecap="round"
-                strokeLinejoin="round"
-                strokeWidth={2}
-                d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-              />
-            </svg>
-            <h3 className="text-lg font-medium mb-2">
-              {translate('viewer.unsupportedFormat')}
-            </h3>
-            <p className="text-gray-500 dark:text-gray-400 mb-4">
-              {translate('viewer.downloadInstead')}
-            </p>
-            <a
-              href={document.url}
-              download={document.name}
-              className="px-4 py-2 bg-blue-500 text-white rounded-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-            >
-              {translate('viewer.download')}
-            </a>
+          <div className="flex items-center justify-center h-full">
+            <div className="text-center">
+              <div className="text-6xl mb-4">📄</div>
+              <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+                {document.name}
+              </h3>
+              <p className="text-gray-600 dark:text-gray-400 mb-4">
+                This file type cannot be previewed directly
+              </p>
+              <a
+                href={document.url}
+                download={document.name}
+                className="inline-flex items-center px-4 py-2 bg-blue-600 text-white rounded hover:bg-blue-700"
+              >
+                <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+                Download
+              </a>
+            </div>
           </div>
         );
     }
   };
 
   return (
-    <div className="bg-white dark:bg-gray-900 rounded-lg shadow-xl overflow-hidden flex flex-col w-full h-full">
-      {/* Header */}
-      <div className="bg-gray-100 dark:bg-gray-800 px-4 py-3 flex items-center justify-between border-b border-gray-200 dark:border-gray-700">
-        <div className="flex items-center">
-          <h2 className="text-lg font-medium text-gray-900 dark:text-gray-100 truncate">
-            {document?.name || translate('viewer.loading')}
+    <div className="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center p-4">
+      <div className="bg-white dark:bg-gray-800 rounded-lg w-full max-w-6xl h-[90vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700">
+          <h2 className="text-lg font-medium text-gray-900 dark:text-white truncate">
+            {document.name}
           </h2>
+          <button
+            onClick={onClose}
+            className="p-2 text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 transition-colors"
+          >
+            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
         </div>
-        <div className="flex items-center space-x-2">
-          {document && (
-            <a
-              href={document.url}
-              download={document.name}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              title={translate('viewer.download')}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4"
-                />
-              </svg>
-            </a>
-          )}
-          {onClose && (
-            <button
-              onClick={onClose}
-              className="p-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200"
-              title={translate('viewer.close')}
-            >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-5 w-5"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M6 18L18 6M6 6l12 12"
-                />
-              </svg>
-            </button>
-          )}
+
+        {/* Content */}
+        <div className="flex-1 overflow-hidden">
+          {renderViewer()}
         </div>
       </div>
-
-      {/* Content */}
-      <div className="flex-1 overflow-auto relative">
-        {loading ? (
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
-          </div>
-        ) : error ? (
-          <div className="absolute inset-0 flex items-center justify-center p-4">
-            <div className="bg-red-50 dark:bg-red-900/20 text-red-700 dark:text-red-400 p-4 rounded-md max-w-md text-center">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                className="h-10 w-10 mx-auto mb-3 text-red-500"
-                fill="none"
-                viewBox="0 0 24 24"
-                stroke="currentColor"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                />
-              </svg>
-              <h3 className="text-lg font-medium mb-2">{translate('viewer.error.title')}</h3>
-              <p>{error}</p>
-            </div>
-          </div>
-        ) : (
-          renderViewer()
-        )}
-      </div>
-
-      {/* Footer with metadata */}
-      {document && (
-        <div className="bg-gray-50 dark:bg-gray-800 px-4 py-3 border-t border-gray-200 dark:border-gray-700 text-sm text-gray-500 dark:text-gray-400">
-          <div className="flex flex-wrap gap-x-4 gap-y-1">
-            <div>
-              {translate('viewer.type')}: {document.type}
-            </div>
-            <div>
-              {translate('viewer.size')}: {(document.size / 1024 / 1024).toFixed(2)} MB
-            </div>
-            {document.created_at && (
-              <div>
-                {translate('viewer.uploaded')}:{' '}
-                {new Date(document.created_at).toLocaleDateString()}
-              </div>
-            )}
-          </div>
-        </div>
-      )}
     </div>
   );
 };

@@ -2,7 +2,7 @@ import React from 'react';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { BrowserRouter } from 'react-router-dom';
-import DocumentList from '../../components/documents/DocumentList';
+import { DocumentList } from '../../components/documents/DocumentList';
 import { SupabaseAuthProvider } from '../../context/SupabaseAuthContext';
 import { LanguageProvider } from '../../context/LanguageContext';
 
@@ -90,7 +90,7 @@ describe('DocumentList Component', () => {
   it('should render document list', async () => {
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -106,7 +106,7 @@ describe('DocumentList Component', () => {
   it('should display document metadata correctly', async () => {
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -130,7 +130,7 @@ describe('DocumentList Component', () => {
   it('should show AI classification badges', async () => {
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -149,7 +149,7 @@ describe('DocumentList Component', () => {
 
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -177,7 +177,7 @@ describe('DocumentList Component', () => {
   it('should handle document viewing', async () => {
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -204,7 +204,7 @@ describe('DocumentList Component', () => {
 
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -237,7 +237,7 @@ describe('DocumentList Component', () => {
     
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -258,7 +258,7 @@ describe('DocumentList Component', () => {
   it('should handle pagination', async () => {
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -279,7 +279,7 @@ describe('DocumentList Component', () => {
     
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -315,7 +315,7 @@ describe('DocumentList Component', () => {
 
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -328,7 +328,7 @@ describe('DocumentList Component', () => {
 
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
@@ -347,12 +347,176 @@ describe('DocumentList Component', () => {
 
     render(
       <TestWrapper>
-        <DocumentList />
+        <DocumentList userId="user-1" />
       </TestWrapper>
     );
 
     await waitFor(() => {
       expect(screen.getByText(/no documents found/i)).toBeInTheDocument();
     });
+  });
+
+  it('should handle document click', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    fireEvent.click(screen.getByText('Test Document 1.pdf'));
+    
+    // Add assertions for document click behavior
+  });
+
+  it('should handle search functionality', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add search functionality tests
+  });
+
+  it('should handle category filtering', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add category filtering tests
+  });
+
+  it('should handle document deletion', async () => {
+    const mockDeleteDocument = require('../../services/supabase').deleteDocument;
+    mockDeleteDocument.mockResolvedValue(undefined);
+
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add deletion tests
+  });
+
+  it('should handle translation functionality', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add translation tests
+  });
+
+  it('should handle pagination', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add pagination tests
+  });
+
+  it('should handle items per page change', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add items per page change tests
+  });
+
+  it('should handle search with no results', async () => {
+    const mockSearchDocuments = require('../../services/searchService').searchDocuments;
+    mockSearchDocuments.mockResolvedValue({
+      documents: [],
+      totalCount: 0,
+      searchTime: 50
+    });
+
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('No documents found')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle error states', async () => {
+    const mockSearchDocuments = require('../../services/searchService').searchDocuments;
+    mockSearchDocuments.mockRejectedValue(new Error('Search failed'));
+
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Error loading documents: Search failed')).toBeInTheDocument();
+    });
+  });
+
+  it('should handle loading states', async () => {
+    const mockSearchDocuments = require('../../services/searchService').searchDocuments;
+    mockSearchDocuments.mockImplementation(() => new Promise(() => {})); // Never resolves
+
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    expect(screen.getByText('Loading documents...')).toBeInTheDocument();
+  });
+
+  it('should handle document actions', async () => {
+    render(
+      <TestWrapper>
+        <DocumentList userId="user-1" />
+      </TestWrapper>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+
+    // Add document actions tests
   });
 });

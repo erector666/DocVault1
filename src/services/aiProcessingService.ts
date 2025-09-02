@@ -1,10 +1,4 @@
-import { 
-  classifyDocument, 
-  extractTextFromDocument, 
-  detectLanguage, 
-  generateDocumentSummary 
-} from './classificationService';
-import { updateDocument } from './documentService';
+import { supabase } from './supabase';
 
 export interface AIProcessingResult {
   extractedText: string;
@@ -16,7 +10,7 @@ export interface AIProcessingResult {
 }
 
 /**
- * Process a document with AI after upload
+ * Process a document with AI after upload using Supabase Edge Functions
  */
 export const processDocumentWithAI = async (
   documentId: string,
@@ -26,51 +20,173 @@ export const processDocumentWithAI = async (
   try {
     console.log('🤖 Starting AI processing for document:', documentId);
     
-    // Step 1: Extract text from document
-    console.log('📝 Extracting text...');
-    const extractedText = await extractTextFromDocument(documentUrl, documentType);
-    
-    // Step 2: Detect language
-    console.log('🗣️ Detecting language...');
-    const language = await detectLanguage(documentUrl, documentType);
-    
-    // Step 3: Classify document
-    console.log('🏷️ Classifying document...');
-    const classification = await classifyDocument(documentId, documentUrl, documentType);
-    
-    // Step 4: Generate summary
-    console.log('📄 Generating summary...');
-    const summary = await generateDocumentSummary(documentUrl, documentType);
-    
-    // Combine all AI results
-    const aiResult: AIProcessingResult = {
-      extractedText,
-      categories: classification.categories,
-      tags: classification.tags,
-      language,
-      summary: summary || 'Summary not available',
-      confidence: classification.confidence
-    };
-    
+    // Use Supabase Edge Function for document processing
+    const { data: aiResult, error } = await supabase.functions
+      .invoke('process-document', {
+        body: {
+          fileUrl: documentUrl,
+          fileName: documentId,
+          fileType: documentType,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+    if (error) {
+      console.error('AI processing error:', error);
+      throw new Error(`AI processing failed: ${error.message}`);
+    }
+
     console.log('✅ AI processing completed:', aiResult);
     
     // Update document with AI results
-    await updateDocument(documentId, {
-      metadata: {
-        aiProcessed: true,
-        extractedText,
-        categories: classification.categories,
-        tags: classification.tags,
-        language,
-        summary: summary,
-        confidence: classification.confidence,
-        processedAt: new Date().toISOString()
-      }
-    });
-    
-    return aiResult;
+    await supabase
+      .from('documents')
+      .update({
+        ai_analysis: {
+          extractedText: aiResult.extractedText,
+          categories: [aiResult.classification.category],
+          tags: aiResult.classification.keywords,
+          language: aiResult.classification.language,
+          summary: aiResult.extractedText.substring(0, 200) + '...',
+          confidence: aiResult.classification.confidence,
+          processedAt: aiResult.processedAt
+        }
+      })
+      .eq('id', documentId);
+
+    return {
+      extractedText: aiResult.extractedText,
+      categories: [aiResult.classification.category],
+      tags: aiResult.classification.keywords,
+      language: aiResult.classification.language,
+      summary: aiResult.extractedText.substring(0, 200) + '...',
+      confidence: aiResult.classification.confidence
+    };
   } catch (error) {
     console.error('❌ AI processing failed:', error);
+    throw error;
+  }
+};
+
+/**
+ * Extract text from a document using Supabase Edge Functions
+ */
+export const extractTextFromDocument = async (
+  documentUrl: string,
+  documentType: string
+): Promise<string> => {
+  try {
+    const { data: result, error } = await supabase.functions
+      .invoke('process-document', {
+        body: {
+          fileUrl: documentUrl,
+          fileName: 'extract-text',
+          fileType: documentType,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+    if (error) {
+      throw new Error(`Text extraction failed: ${error.message}`);
+    }
+
+    return result.extractedText;
+  } catch (error) {
+    console.error('Error extracting text:', error);
+    throw error;
+  }
+};
+
+/**
+ * Classify a document using AI
+ */
+export const classifyDocument = async (
+  documentId: string,
+  documentUrl: string,
+  documentType: string
+): Promise<{ categories: string[]; tags: string[]; confidence: number }> => {
+  try {
+    const { data: result, error } = await supabase.functions
+      .invoke('process-document', {
+        body: {
+          fileUrl: documentUrl,
+          fileName: documentId,
+          fileType: documentType,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+    if (error) {
+      throw new Error(`Document classification failed: ${error.message}`);
+    }
+
+    return {
+      categories: [result.classification.category],
+      tags: result.classification.keywords,
+      confidence: result.classification.confidence
+    };
+  } catch (error) {
+    console.error('Error classifying document:', error);
+    throw error;
+  }
+};
+
+/**
+ * Detect language of a document
+ */
+export const detectLanguage = async (
+  documentUrl: string,
+  documentType: string
+): Promise<string> => {
+  try {
+    const { data: result, error } = await supabase.functions
+      .invoke('process-document', {
+        body: {
+          fileUrl: documentUrl,
+          fileName: 'detect-language',
+          fileType: documentType,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+    if (error) {
+      throw new Error(`Language detection failed: ${error.message}`);
+    }
+
+    return result.classification.language;
+  } catch (error) {
+    console.error('Error detecting language:', error);
+    throw error;
+  }
+};
+
+/**
+ * Generate document summary
+ */
+export const generateDocumentSummary = async (
+  documentUrl: string,
+  documentType: string,
+  maxLength: number = 200
+): Promise<string> => {
+  try {
+    const { data: result, error } = await supabase.functions
+      .invoke('process-document', {
+        body: {
+          fileUrl: documentUrl,
+          fileName: 'generate-summary',
+          fileType: documentType,
+          userId: (await supabase.auth.getUser()).data.user?.id
+        }
+      });
+
+    if (error) {
+      throw new Error(`Summary generation failed: ${error.message}`);
+    }
+
+    const text = result.extractedText;
+    return text.length > maxLength ? text.substring(0, maxLength) + '...' : text;
+  } catch (error) {
+    console.error('Error generating summary:', error);
     throw error;
   }
 };

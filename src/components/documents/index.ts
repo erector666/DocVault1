@@ -1,1 +1,3 @@
-export { default as DocumentList } from './DocumentList';
+export { DocumentList } from './DocumentList';
+export { default as DocumentPagination } from './DocumentPagination';
+export { default as CategoryFilter } from './CategoryFilter';

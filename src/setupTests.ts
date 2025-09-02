@@ -4,41 +4,25 @@
 // learn more: https://github.com/testing-library/jest-dom
 import '@testing-library/jest-dom';
 
-// Polyfill for TextEncoder/TextDecoder (required for Firebase in Node.js test environment)
-import { TextEncoder, TextDecoder } from 'util';
+// Real integration testing setup - no mocks
+// TestSprite will handle real API calls, real database operations, and real service testing
 
-// Polyfill for Web Streams (required for Firebase fetch in Node.js test environment)
-import { ReadableStream, WritableStream, TransformStream } from 'web-streams-polyfill';
-
-global.TextEncoder = TextEncoder;
-global.TextDecoder = TextDecoder as any;
-
-global.ReadableStream = ReadableStream as any;
-global.WritableStream = WritableStream as any;
-global.TransformStream = TransformStream as any;
-
-// Mock window.matchMedia for responsive design tests
+// Only keep essential test environment setup
 Object.defineProperty(window, 'matchMedia', {
   writable: true,
   value: jest.fn().mockImplementation(query => ({
     matches: false,
     media: query,
     onchange: null,
-    addListener: jest.fn(), // deprecated
-    removeListener: jest.fn(), // deprecated
+    addListener: jest.fn(),
+    removeListener: jest.fn(),
     addEventListener: jest.fn(),
     removeEventListener: jest.fn(),
     dispatchEvent: jest.fn(),
   })),
 });
 
-// Mock localStorage
-const localStorageMock = {
-  getItem: jest.fn(),
-  setItem: jest.fn(),
-  removeItem: jest.fn(),
-  clear: jest.fn(),
-  length: 0,
-  key: jest.fn(),
-};
-global.localStorage = localStorageMock as Storage;
+// Real testing environment - let TestSprite handle the rest
+console.log('🧪 TestSprite Integration Testing Environment Ready');
+console.log('📡 Will test real APIs, real database, real services');
+console.log('🔍 No mocks - real integration testing enabled');

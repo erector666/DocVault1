@@ -140,6 +140,179 @@ export const getDocuments = async (userId: string): Promise<Document[]> => {
   return syncedDocuments || [];
 };
 
+/**
+ * Sync frontend with Supabase - remove orphaned database records
+ * This function should be called periodically to ensure consistency
+ */
+export const syncWithSupabase = async (userId: string): Promise<{
+  orphanedRecordsRemoved: number;
+  orphanedFilesRemoved: number;
+}> => {
+  try {
+    console.log('Starting Supabase sync for user:', userId);
+    
+    let orphanedRecordsRemoved = 0;
+    let orphanedFilesRemoved = 0;
+
+    // Get all documents for the user
+    const { data: documents, error: fetchError } = await supabase
+      .from('documents')
+      .select('id, url, name, user_id')
+      .eq('user_id', userId);
+
+    if (fetchError) {
+      throw new Error(`Failed to fetch documents: ${fetchError.message}`);
+    }
+
+    if (!documents || documents.length === 0) {
+      console.log('No documents found for user');
+      return { orphanedRecordsRemoved: 0, orphanedFilesRemoved: 0 };
+    }
+
+    console.log(`Checking ${documents.length} documents for consistency...`);
+
+    // Check each document's storage file
+    for (const document of documents) {
+      try {
+        // Extract file path
+        let filePath: string;
+        if (document.url.includes('/storage/v1/object/public/documents/')) {
+          filePath = document.url.split('/storage/v1/object/public/documents/')[1];
+        } else if (document.url.includes('/object/public/documents/')) {
+          filePath = document.url.split('/object/public/documents/')[1];
+        } else {
+          filePath = `${document.user_id}/${document.name}`;
+        }
+
+        // Check if file exists in storage
+        const { data: fileExists, error: checkError } = await supabase.storage
+          .from('documents')
+          .list(filePath.split('/').slice(0, -1).join('/'), {
+            limit: 1000,
+            search: filePath.split('/').pop()
+          });
+
+        if (checkError) {
+          console.warn(`Error checking file existence for ${document.name}:`, checkError.message);
+          continue;
+        }
+
+        // If file doesn't exist in storage, remove the database record
+        if (!fileExists || fileExists.length === 0) {
+          console.log(`Removing orphaned database record for: ${document.name}`);
+          
+          const { error: deleteError } = await supabase
+            .from('documents')
+            .delete()
+            .eq('id', document.id);
+
+          if (deleteError) {
+            console.error(`Failed to remove orphaned record for ${document.name}:`, deleteError.message);
+          } else {
+            orphanedRecordsRemoved++;
+          }
+        }
+      } catch (error) {
+        console.error(`Error processing document ${document.name}:`, error);
+      }
+    }
+
+    // Also check for orphaned storage files (files without database records)
+    try {
+      const { data: storageFiles, error: storageError } = await supabase.storage
+        .from('documents')
+        .list(userId, { limit: 1000 });
+
+      if (!storageError && storageFiles) {
+        for (const file of storageFiles) {
+          // Check if this file has a corresponding database record
+          const fileName = file.name;
+          const hasRecord = documents.some(doc => doc.name === fileName);
+
+          if (!hasRecord) {
+            console.log(`Removing orphaned storage file: ${fileName}`);
+            
+            const { error: removeError } = await supabase.storage
+              .from('documents')
+              .remove([`${userId}/${fileName}`]);
+
+            if (removeError) {
+              console.error(`Failed to remove orphaned file ${fileName}:`, removeError.message);
+            } else {
+              orphanedFilesRemoved++;
+            }
+          }
+        }
+      }
+    } catch (error) {
+      console.error('Error checking for orphaned storage files:', error);
+    }
+
+    console.log(`Sync completed. Removed ${orphanedRecordsRemoved} orphaned records and ${orphanedFilesRemoved} orphaned files.`);
+    
+    return { orphanedRecordsRemoved, orphanedFilesRemoved };
+
+  } catch (error) {
+    console.error('Error in syncWithSupabase:', error);
+    throw error;
+  }
+};
+
+/**
+ * Force cleanup of a specific file from both storage and database
+ * Use this when you know a file should be deleted but normal deletion failed
+ */
+export const forceCleanupFile = async (fileName: string, userId: string): Promise<void> => {
+  try {
+    console.log(`Force cleaning up file: ${fileName} for user: ${userId}`);
+    
+    // Try to remove from storage with multiple path variations
+    const possiblePaths = [
+      `${userId}/${fileName}`,
+      fileName,
+      `${userId}/${fileName.replace(/^[^\/]+\//, '')}`,
+    ];
+
+    let storageCleaned = false;
+    for (const path of possiblePaths) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([path]);
+        
+        if (!storageError) {
+          console.log(`Successfully cleaned up storage file at path: ${path}`);
+          storageCleaned = true;
+          break;
+        }
+      } catch (error) {
+        console.log(`Failed to clean up path ${path}:`, error);
+      }
+    }
+
+    // Remove from database if it exists
+    const { error: dbError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('name', fileName)
+      .eq('user_id', userId);
+
+    if (dbError && dbError.code !== 'PGRST116') { // PGRST116 = no rows found
+      console.warn(`Database cleanup warning: ${dbError.message}`);
+    }
+
+    if (storageCleaned) {
+      console.log(`Successfully force cleaned up file: ${fileName}`);
+    } else {
+      console.warn(`File ${fileName} may still exist in storage`);
+    }
+
+  } catch (error) {
+    console.error(`Error in forceCleanupFile for ${fileName}:`, error);
+    throw error;
+  }
+};
+
 // File type validation
 const ALLOWED_FILE_TYPES = [
   'application/pdf',
@@ -232,10 +405,6 @@ export const uploadDocument = async (
       url: publicUrl,
       user_id: userId,
       category: classification.category,
-      keywords: classification.keywords,
-      confidence: classification.confidence,
-      document_type: classification.documentType,
-      language: classification.language,
       ai_analysis: {
         extractedText: extractedText,
         classification: classification,
@@ -287,73 +456,93 @@ export const getDocument = async (documentId: string): Promise<Document | null> 
 };
 
 export const deleteDocument = async (documentId: string): Promise<void> => {
-  const { data: document, error: fetchError } = await supabase
-    .from('documents')
-    .select('url, user_id')
-    .eq('id', documentId)
-    .single();
+  try {
+    // First, get the document details
+    const { data: document, error: fetchError } = await supabase
+      .from('documents')
+      .select('url, user_id, name')
+      .eq('id', documentId)
+      .single();
 
-  if (fetchError) {
-    throw new Error(fetchError.message);
-  }
+    if (fetchError) {
+      throw new Error(`Failed to fetch document: ${fetchError.message}`);
+    }
 
-  // Extract file path from URL - handle both public URL formats
-  let filePath: string;
-  
-  if (document.url.includes('/storage/v1/object/public/documents/')) {
-    // New public URL format
-    filePath = document.url.split('/storage/v1/object/public/documents/')[1];
-  } else if (document.url.includes('/object/public/documents/')) {
-    // Alternative public URL format
-    filePath = document.url.split('/object/public/documents/')[1];
-  } else {
-    // Fallback - try to extract filename from URL
-    const urlParts = document.url.split('/');
-    filePath = urlParts[urlParts.length - 1];
-  }
+    if (!document) {
+      throw new Error('Document not found');
+    }
 
-  console.log('Attempting to delete file at path:', filePath);
+    console.log('Deleting document:', document.name, 'with URL:', document.url);
 
-  // Delete from storage first
-  const { error: storageError } = await supabase.storage
-    .from('documents')
-    .remove([filePath]);
-
-  if (storageError) {
-    console.warn('Storage deletion failed:', storageError.message);
-    // Continue with database deletion even if storage fails
-  }
-
-  // Delete from database
-  const { error: dbError } = await supabase
-    .from('documents')
-    .delete()
-    .eq('id', documentId);
-
-  if (dbError) {
-    throw new Error(`Database deletion failed: ${dbError.message}`);
-  }
-
-  // If storage deletion failed initially, try alternative approaches
-  if (storageError) {
-    console.log('Attempting alternative storage deletion methods...');
+    // Extract file path from URL more reliably
+    let filePath: string;
     
-    // Try with different path formats
-    const alternativePaths = [
-      `${document.user_id}/${filePath}`,
-      `documents/${filePath}`,
-      filePath.replace(/^documents\//, ''),
+    if (document.url.includes('/storage/v1/object/public/documents/')) {
+      // New public URL format: https://.../storage/v1/object/public/documents/userId/filename
+      filePath = document.url.split('/storage/v1/object/public/documents/')[1];
+    } else if (document.url.includes('/object/public/documents/')) {
+      // Alternative public URL format
+      filePath = document.url.split('/object/public/documents/')[1];
+    } else {
+      // Fallback - construct path from user_id and filename
+      filePath = `${document.user_id}/${document.name}`;
+    }
+
+    console.log('Extracted file path:', filePath);
+
+    // Try multiple path variations to ensure deletion
+    const possiblePaths = [
+      filePath,
+      `${document.user_id}/${document.name}`,
+      document.name,
+      filePath.replace(/^[^\/]+\//, ''), // Remove user_id prefix if present
     ];
 
-    for (const altPath of alternativePaths) {
-      const { error: altError } = await supabase.storage
-        .from('documents')
-        .remove([altPath]);
-      
-      if (!altError) {
-        console.log(`Successfully deleted file using alternative path: ${altPath}`);
-        break;
+    console.log('Attempting deletion with paths:', possiblePaths);
+
+    // Delete from storage using multiple path attempts
+    let storageDeleted = false;
+    for (const path of possiblePaths) {
+      try {
+        const { error: storageError } = await supabase.storage
+          .from('documents')
+          .remove([path]);
+        
+        if (!storageError) {
+          console.log(`Successfully deleted storage file at path: ${path}`);
+          storageDeleted = true;
+          break;
+        } else {
+          console.log(`Storage deletion failed for path ${path}:`, storageError.message);
+        }
+      } catch (error) {
+        console.log(`Error trying path ${path}:`, error);
       }
     }
+
+    if (!storageDeleted) {
+      console.warn('Storage deletion failed for all attempted paths');
+    }
+
+    // Delete from database
+    const { error: dbError } = await supabase
+      .from('documents')
+      .delete()
+      .eq('id', documentId);
+
+    if (dbError) {
+      throw new Error(`Database deletion failed: ${dbError.message}`);
+    }
+
+    console.log('Successfully deleted document from database');
+
+    // If storage deletion failed, log it but don't fail the operation
+    if (!storageDeleted) {
+      console.warn('Document deleted from database but storage cleanup may be incomplete');
+    }
+
+  } catch (error) {
+    console.error('Error in deleteDocument:', error);
+    throw error;
   }
 };
