@@ -11,6 +11,10 @@ CREATE TABLE documents (
   user_id UUID REFERENCES auth.users(id) ON DELETE CASCADE,
   category TEXT,
   tags TEXT[],
+  keywords TEXT[],
+  confidence FLOAT,
+  document_type TEXT,
+  language TEXT,
   ai_analysis JSONB,
   created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
   updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()

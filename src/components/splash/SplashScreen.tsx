@@ -1,11 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useLanguage } from '../../context/LanguageContext';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 
 const SplashScreen: React.FC = () => {
   const { translate } = useLanguage();
-  const { currentUser } = useAuth();
+  const { currentUser } = useSupabaseAuth();
   const navigate = useNavigate();
   const [fadeOut, setFadeOut] = useState(false);
 

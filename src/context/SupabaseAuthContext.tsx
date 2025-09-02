@@ -9,7 +9,9 @@ interface AuthContextType {
   signUp: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>;
   signIn: (email: string, password: string) => Promise<{ user: User | null; error: AuthError | null }>;
   signOut: () => Promise<{ error: AuthError | null }>;
+  logout: () => Promise<{ error: AuthError | null }>;
   resetPassword: (email: string) => Promise<{ error: AuthError | null }>;
+  updateProfile: (updates: { full_name?: string; avatar_url?: string }) => Promise<{ error: AuthError | null }>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -73,6 +75,17 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     return { error };
   };
 
+  const logout = async () => {
+    return await signOut();
+  };
+
+  const updateProfile = async (updates: { full_name?: string; avatar_url?: string }) => {
+    const { error } = await supabase.auth.updateUser({
+      data: updates
+    });
+    return { error };
+  };
+
   const value = {
     currentUser,
     session,
@@ -80,7 +93,9 @@ export const SupabaseAuthProvider: React.FC<{ children: React.ReactNode }> = ({ 
     signUp,
     signIn,
     signOut,
+    logout,
     resetPassword,
+    updateProfile,
   };
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

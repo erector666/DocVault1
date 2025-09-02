@@ -28,6 +28,21 @@ const defaultTranslations: Translations = {
     mk: 'Табла',
     fr: 'Tableau de bord',
   },
+  'dashboard.title': {
+    en: 'Dashboard',
+    mk: 'Табла',
+    fr: 'Tableau de bord',
+  },
+  'dashboard.welcome': {
+    en: 'Welcome to DocVault',
+    mk: 'Добредојдовте во DocVault',
+    fr: 'Bienvenue dans DocVault',
+  },
+  'dashboard.search.placeholder': {
+    en: 'Search documents...',
+    mk: 'Пребарај документи...',
+    fr: 'Rechercher des documents...',
+  },
   categories: {
     en: 'Categories',
     mk: 'Категории',
@@ -352,6 +367,129 @@ const defaultTranslations: Translations = {
     en: 'Please select files to upload',
     mk: 'Изберете датотеки за прикачување',
     fr: 'Veuillez sélectionner des fichiers à télécharger',
+  },
+  // Missing translation keys
+  'manage_documents': {
+    en: 'Manage Documents',
+    mk: 'Управувај со документи',
+    fr: 'Gérer les documents',
+  },
+  'upload_documents': {
+    en: 'Upload Documents',
+    mk: 'Прикачи документи',
+    fr: 'Télécharger des documents',
+  },
+  // Translation feature keys
+  'translation.title': {
+    en: 'Translate Document',
+    mk: 'Преведи документ',
+    fr: 'Traduire le document',
+  },
+  'translation.documentName': {
+    en: 'Document',
+    mk: 'Документ',
+    fr: 'Document',
+  },
+  'translation.sourceLanguage': {
+    en: 'Source Language',
+    mk: 'Изворен јазик',
+    fr: 'Langue source',
+  },
+  'translation.unknown': {
+    en: 'Unknown',
+    mk: 'Непознато',
+    fr: 'Inconnu',
+  },
+  'translation.selectTargetLanguage': {
+    en: 'Select Target Language',
+    mk: 'Избери целен јазик',
+    fr: 'Sélectionner la langue cible',
+  },
+  'translation.selectLanguage': {
+    en: 'Choose a language...',
+    mk: 'Избери јазик...',
+    fr: 'Choisir une langue...',
+  },
+  'translation.translate': {
+    en: 'Translate',
+    mk: 'Преведи',
+    fr: 'Traduire',
+  },
+  'translation.translating': {
+    en: 'Translating...',
+    mk: 'Преведување...',
+    fr: 'Traduction en cours...',
+  },
+  'translation.processingDocument': {
+    en: 'Processing document for translation...',
+    mk: 'Обработка на документот за преведување...',
+    fr: 'Traitement du document pour la traduction...',
+  },
+  'translation.error.languages': {
+    en: 'Failed to load supported languages',
+    mk: 'Неуспешно вчитување на поддржани јазици',
+    fr: 'Échec du chargement des langues prises en charge',
+  },
+  'translation.error.translating': {
+    en: 'Translation failed. Please try again.',
+    mk: 'Преведувањето не успеа. Обидете се повторно.',
+    fr: 'La traduction a échoué. Veuillez réessayer.',
+  },
+  // Document viewer keys
+  'viewer.loading': {
+    en: 'Loading document...',
+    mk: 'Вчитување документ...',
+    fr: 'Chargement du document...',
+  },
+  'viewer.error.title': {
+    en: 'Error',
+    mk: 'Грешка',
+    fr: 'Erreur',
+  },
+  'viewer.error.notFound': {
+    en: 'Document not found',
+    mk: 'Документот не е пронајден',
+    fr: 'Document non trouvé',
+  },
+  'viewer.error.fetchFailed': {
+    en: 'Failed to load document',
+    mk: 'Неуспешно вчитување на документот',
+    fr: 'Échec du chargement du document',
+  },
+  'viewer.unsupportedFormat': {
+    en: 'Unsupported Format',
+    mk: 'Неподдржан формат',
+    fr: 'Format non pris en charge',
+  },
+  'viewer.downloadInstead': {
+    en: 'This file type cannot be previewed. Download it to view.',
+    mk: 'Овој тип на датотека не може да се прегледа. Преземете ја за да ја видите.',
+    fr: 'Ce type de fichier ne peut pas être prévisualisé. Téléchargez-le pour le voir.',
+  },
+  'viewer.download': {
+    en: 'Download',
+    mk: 'Преземи',
+    fr: 'Télécharger',
+  },
+  'viewer.close': {
+    en: 'Close',
+    mk: 'Затвори',
+    fr: 'Fermer',
+  },
+  'viewer.type': {
+    en: 'Type',
+    mk: 'Тип',
+    fr: 'Type',
+  },
+  'viewer.size': {
+    en: 'Size',
+    mk: 'Големина',
+    fr: 'Taille',
+  },
+  'viewer.uploaded': {
+    en: 'Uploaded',
+    mk: 'Прикачено',
+    fr: 'Téléchargé',
   },
 };
 

@@ -1,7 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage, LanguageType } from '../../context/LanguageContext';
 import { useUploadModal } from '../../context/UploadModalContext';
-import { useAuth } from '../../context/AuthContext';
 import { Link, useNavigate } from 'react-router-dom';
 import ThemeToggle from '../ui/ThemeToggle';
 
@@ -12,7 +12,7 @@ interface HeaderProps {
 const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
   const { language, setLanguage, translate } = useLanguage();
   const { openModal } = useUploadModal();
-  const { logOut, currentUser } = useAuth();
+  const { logout, currentUser } = useSupabaseAuth();
   const navigate = useNavigate();
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
   const [isLanguageMenuOpen, setIsLanguageMenuOpen] = useState(false);
@@ -43,7 +43,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
 
   return (
     <header className="bg-white dark:bg-gray-800 shadow-md py-3 px-4 md:px-6">
-      <div className="flex items-center justify-between h-12">
+      <div className="flex items-center justify-between h-12 min-h-[48px]">
         {/* Left side - Mobile Menu Button */}
         <div className="flex items-center flex-shrink-0">
           <button 
@@ -68,7 +68,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
             </div>
             <input 
               type="search" 
-              className="block w-full p-2.5 pl-10 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
+              className="block w-full h-10 pl-10 pr-4 text-sm border border-gray-300 rounded-lg bg-gray-50 focus:ring-primary-500 focus:border-primary-500 dark:bg-gray-700 dark:border-gray-600 dark:placeholder-gray-400 dark:text-white" 
               placeholder={`${translate('search')}...`} 
             />
           </div>
@@ -79,7 +79,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
           {/* Upload Button - Hidden on small mobile, shown on larger mobile */}
           <button 
             onClick={openModal}
-            className="hidden sm:flex bg-primary-600 hover:bg-primary-700 text-white font-medium py-2 px-3 md:px-4 rounded-lg items-center transition-colors touch-manipulation"
+            className="hidden sm:flex bg-primary-600 hover:bg-primary-700 text-white font-medium h-10 px-3 md:px-4 rounded-lg items-center transition-colors touch-manipulation"
           >
             <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 md:h-5 md:w-5 mr-1 md:mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-8l-4-4m0 0L8 8m4-4v12" />
@@ -148,10 +148,10 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
               aria-label="User menu"
             >
               <div className="h-8 w-8 rounded-full bg-primary-200 dark:bg-primary-700 flex items-center justify-center text-primary-700 dark:text-primary-200 overflow-hidden">
-                {currentUser?.photoURL ? (
-                  <img src={currentUser.photoURL} alt="Profile" className="h-full w-full object-cover" />
+                {currentUser?.user_metadata?.avatar_url ? (
+                  <img src={currentUser.user_metadata.avatar_url} alt="Profile" className="h-full w-full object-cover" />
                 ) : (
-                  <span>{getInitials(currentUser?.displayName)}</span>
+                  <span>{getInitials(currentUser?.user_metadata?.full_name || currentUser?.email)}</span>
                 )}
               </div>
             </button>
@@ -176,7 +176,7 @@ const Header: React.FC<HeaderProps> = ({ onMenuClick }) => {
                 <button 
                   onClick={async () => {
                     try {
-                      await logOut();
+                      await logout();
                       setIsProfileMenuOpen(false);
                       navigate('/');
                     } catch (error) {

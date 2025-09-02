@@ -1,0 +1,281 @@
+import { uploadDocument, deleteDocument, getDocuments } from '../../services/supabase';
+import { supabase } from '../../services/supabase';
+
+// Mock Supabase client
+jest.mock('../../services/supabase', () => ({
+  supabase: {
+    from: jest.fn(),
+    storage: {
+      from: jest.fn()
+    }
+  }
+}));
+
+// Mock virus scanner
+jest.mock('../../services/virusScanner', () => ({
+  performSecurityCheck: jest.fn()
+}));
+
+// Mock AI service
+jest.mock('../../services/aiService', () => ({
+  extractTextFromDocument: jest.fn(),
+  classifyDocument: jest.fn()
+}));
+
+describe('Supabase Service', () => {
+  const mockSupabase = supabase as jest.Mocked<typeof supabase>;
+  
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('uploadDocument', () => {
+    const mockFile = new File(['test content'], 'test.pdf', { type: 'application/pdf' });
+    const mockUserId = 'user-123';
+
+    it('should successfully upload a document', async () => {
+      // Mock security check
+      const mockPerformSecurityCheck = require('../../services/virusScanner').performSecurityCheck;
+      mockPerformSecurityCheck.mockResolvedValue({ passed: true, threats: [] });
+
+      // Mock AI services
+      const mockExtractText = require('../../services/aiService').extractTextFromDocument;
+      const mockClassifyDocument = require('../../services/aiService').classifyDocument;
+      mockExtractText.mockResolvedValue('Sample document text');
+      mockClassifyDocument.mockResolvedValue({
+        category: 'Document',
+        confidence: 0.85,
+        method: 'keyword'
+      });
+
+      // Mock storage upload
+      const mockStorageFrom = jest.fn().mockReturnValue({
+        upload: jest.fn().mockResolvedValue({
+          data: { path: 'user-123/test.pdf' },
+          error: null
+        }),
+        getPublicUrl: jest.fn().mockReturnValue({
+          data: { publicUrl: 'https://example.com/test.pdf' }
+        })
+      });
+      mockSupabase.storage.from.mockReturnValue(mockStorageFrom());
+
+      // Mock database insert
+      const mockFrom = jest.fn().mockReturnValue({
+        insert: jest.fn().mockResolvedValue({
+          data: [{ id: 'doc-123', name: 'test.pdf' }],
+          error: null
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      const result = await uploadDocument(mockFile, mockUserId, 'Document');
+
+      expect(mockPerformSecurityCheck).toHaveBeenCalledWith(mockFile);
+      expect(mockExtractText).toHaveBeenCalledWith(mockFile);
+      expect(mockClassifyDocument).toHaveBeenCalled();
+      expect(result).toEqual([{ id: 'doc-123', name: 'test.pdf' }]);
+    });
+
+    it('should reject files that fail security check', async () => {
+      const mockPerformSecurityCheck = require('../../services/virusScanner').performSecurityCheck;
+      mockPerformSecurityCheck.mockResolvedValue({
+        passed: false,
+        threats: ['Suspicious file extension']
+      });
+
+      await expect(uploadDocument(mockFile, mockUserId, 'Document'))
+        .rejects.toThrow('File failed security check: Suspicious file extension');
+    });
+
+    it('should handle storage upload errors', async () => {
+      const mockPerformSecurityCheck = require('../../services/virusScanner').performSecurityCheck;
+      mockPerformSecurityCheck.mockResolvedValue({ passed: true, threats: [] });
+
+      const mockStorageFrom = jest.fn().mockReturnValue({
+        upload: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Storage upload failed' }
+        })
+      });
+      mockSupabase.storage.from.mockReturnValue(mockStorageFrom());
+
+      await expect(uploadDocument(mockFile, mockUserId, 'Document'))
+        .rejects.toThrow('Storage upload failed');
+    });
+
+    it('should handle database insert errors', async () => {
+      const mockPerformSecurityCheck = require('../../services/virusScanner').performSecurityCheck;
+      mockPerformSecurityCheck.mockResolvedValue({ passed: true, threats: [] });
+
+      const mockExtractText = require('../../services/aiService').extractTextFromDocument;
+      const mockClassifyDocument = require('../../services/aiService').classifyDocument;
+      mockExtractText.mockResolvedValue('Sample text');
+      mockClassifyDocument.mockResolvedValue({ category: 'Document', confidence: 0.8 });
+
+      const mockStorageFrom = jest.fn().mockReturnValue({
+        upload: jest.fn().mockResolvedValue({
+          data: { path: 'user-123/test.pdf' },
+          error: null
+        }),
+        getPublicUrl: jest.fn().mockReturnValue({
+          data: { publicUrl: 'https://example.com/test.pdf' }
+        })
+      });
+      mockSupabase.storage.from.mockReturnValue(mockStorageFrom());
+
+      const mockFrom = jest.fn().mockReturnValue({
+        insert: jest.fn().mockResolvedValue({
+          data: null,
+          error: { message: 'Database insert failed' }
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      await expect(uploadDocument(mockFile, mockUserId, 'Document'))
+        .rejects.toThrow('Database insert failed');
+    });
+  });
+
+  describe('deleteDocument', () => {
+    it('should successfully delete a document', async () => {
+      // Mock document fetch
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: {
+                url: 'https://example.com/storage/v1/object/public/documents/user-123/test.pdf',
+                user_id: 'user-123'
+              },
+              error: null
+            })
+          })
+        }),
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({
+            error: null
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      // Mock storage delete
+      const mockStorageFrom = jest.fn().mockReturnValue({
+        remove: jest.fn().mockResolvedValue({
+          error: null
+        })
+      });
+      mockSupabase.storage.from.mockReturnValue(mockStorageFrom());
+
+      await expect(deleteDocument('doc-123')).resolves.not.toThrow();
+    });
+
+    it('should handle document not found', async () => {
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Document not found' }
+            })
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      await expect(deleteDocument('nonexistent-doc'))
+        .rejects.toThrow('Document not found');
+    });
+
+    it('should continue with database deletion even if storage deletion fails', async () => {
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            single: jest.fn().mockResolvedValue({
+              data: {
+                url: 'https://example.com/storage/v1/object/public/documents/user-123/test.pdf',
+                user_id: 'user-123'
+              },
+              error: null
+            })
+          })
+        }),
+        delete: jest.fn().mockReturnValue({
+          eq: jest.fn().mockResolvedValue({
+            error: null
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      const mockStorageFrom = jest.fn().mockReturnValue({
+        remove: jest.fn().mockResolvedValue({
+          error: { message: 'Storage deletion failed' }
+        })
+      });
+      mockSupabase.storage.from.mockReturnValue(mockStorageFrom());
+
+      // Should not throw error, should continue with database deletion
+      await expect(deleteDocument('doc-123')).resolves.not.toThrow();
+    });
+  });
+
+  describe('getDocuments', () => {
+    it('should fetch documents for a user', async () => {
+      const mockDocuments = [
+        { id: 'doc-1', name: 'test1.pdf', category: 'Document' },
+        { id: 'doc-2', name: 'test2.pdf', category: 'Invoice' }
+      ];
+
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            order: jest.fn().mockResolvedValue({
+              data: mockDocuments,
+              error: null
+            })
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      const result = await getDocuments('user-123');
+      expect(result).toEqual(mockDocuments);
+    });
+
+    it('should handle database fetch errors', async () => {
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            order: jest.fn().mockResolvedValue({
+              data: null,
+              error: { message: 'Database fetch failed' }
+            })
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      await expect(getDocuments('user-123'))
+        .rejects.toThrow('Database fetch failed');
+    });
+
+    it('should return empty array when no documents found', async () => {
+      const mockFrom = jest.fn().mockReturnValue({
+        select: jest.fn().mockReturnValue({
+          eq: jest.fn().mockReturnValue({
+            order: jest.fn().mockResolvedValue({
+              data: [],
+              error: null
+            })
+          })
+        })
+      });
+      mockSupabase.from.mockReturnValue(mockFrom());
+
+      const result = await getDocuments('user-123');
+      expect(result).toEqual([]);
+    });
+  });
+});

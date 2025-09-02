@@ -1,14 +1,24 @@
 import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { useQuery } from 'react-query';
-import { useAuth } from '../context/AuthContext';
+import { useQuery } from '@tanstack/react-query';
+import { getDocument } from '../services/supabase';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import { useLanguage } from '../context/LanguageContext';
-import { getDocument } from '../services/documentService';
+import { Document } from '../types/document';
+import { 
+  ArrowLeftIcon, 
+  DocumentIcon, 
+  ArrowDownTrayIcon,
+  EyeIcon,
+  CalendarIcon,
+  TagIcon,
+  FolderIcon
+} from '@heroicons/react/24/outline';
 import { formatFileSize, formatDate } from '../utils/formatters';
 
 const DocumentView: React.FC = () => {
   const { documentId } = useParams<{ documentId: string }>();
-  const { currentUser } = useAuth();
+  const { currentUser } = useSupabaseAuth();
   const { translate } = useLanguage();
   const navigate = useNavigate();
   const [isImageLoaded, setIsImageLoaded] = useState(false);
@@ -18,14 +28,12 @@ const DocumentView: React.FC = () => {
     data: document, 
     isLoading, 
     isError 
-  } = useQuery(
-    ['document', documentId],
-    () => getDocument(documentId!),
-    {
-      enabled: !!documentId && !!currentUser,
-      staleTime: 60000, // 1 minute
-    }
-  );
+  } = useQuery({
+    queryKey: ['document', documentId],
+    queryFn: () => getDocument(documentId!),
+    enabled: !!documentId && !!currentUser,
+    staleTime: 60000, // 1 minute
+  });
 
   // Get document icon based on file type
   const getDocumentIcon = (type: string) => {
@@ -126,7 +134,7 @@ const DocumentView: React.FC = () => {
                 <span className="font-medium">Type:</span> {document.type}
               </div>
               <div>
-                <span className="font-medium">Uploaded:</span> {formatDate(document.uploadedAt && typeof document.uploadedAt.toDate === 'function' ? document.uploadedAt.toDate() : new Date())}
+                <span className="font-medium">Uploaded:</span> {formatDate(document.created_at ? new Date(document.created_at) : new Date())}
               </div>
               <div>
                 <span className="font-medium">Category:</span> {document.category || 'Uncategorized'}
@@ -138,7 +146,7 @@ const DocumentView: React.FC = () => {
               <div className="mt-4">
                 <span className="font-medium text-gray-700 dark:text-gray-300">Tags:</span>
                 <div className="flex flex-wrap gap-2 mt-2">
-                  {document.tags.map((tag, index) => (
+                  {document.tags.map((tag: string, index: number) => (
                     <span 
                       key={index} 
                       className="inline-flex items-center px-3 py-1 rounded-full text-sm font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-200"
@@ -154,43 +162,40 @@ const DocumentView: React.FC = () => {
       </div>
 
       {/* AI Processing Results */}
-      {document.metadata?.aiProcessed && (
+      {(document.category || document.tags) && (
         <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-6 mb-6">
           <h2 className="text-lg font-semibold text-blue-800 dark:text-blue-200 mb-4">
-            🤖 AI Analysis Results
+            🤖 Document Analysis
           </h2>
           
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {/* Categories */}
-            {document.metadata.categories && (
+            {/* Category */}
+            {document.category && (
               <div>
-                <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Categories</h3>
+                <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Category</h3>
                 <p className="text-blue-600 dark:text-blue-400">
-                  {document.metadata.categories.join(', ')}
+                  {document.category}
                 </p>
               </div>
             )}
             
-            {/* Language */}
-            {document.metadata.language && (
+            {/* Tags */}
+            {document.tags && document.tags.length > 0 && (
               <div>
-                <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Language</h3>
-                <p className="text-blue-600 dark:text-blue-400">
-                  {document.metadata.language}
-                </p>
+                <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Tags</h3>
+                <div className="flex flex-wrap gap-2">
+                  {document.tags.map((tag: string, index: number) => (
+                    <span 
+                      key={index} 
+                      className="inline-flex items-center px-2 py-1 rounded text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-800 dark:text-blue-200"
+                    >
+                      {tag}
+                    </span>
+                  ))}
+                </div>
               </div>
             )}
           </div>
-          
-          {/* Summary */}
-          {document.metadata.summary && (
-            <div className="mt-4">
-              <h3 className="font-medium text-blue-700 dark:text-blue-300 mb-2">Summary</h3>
-              <p className="text-blue-600 dark:text-blue-400">
-                {document.metadata.summary}
-              </p>
-            </div>
-          )}
         </div>
       )}
 

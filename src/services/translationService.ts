@@ -1,6 +1,4 @@
-import { httpsCallable } from 'firebase/functions';
-import { functions } from './firebase';
-import { Document, updateDocument } from './documentService';
+import { supabase, Document } from './supabase';
 
 export interface TranslationResult {
   translatedText: string;
@@ -15,10 +13,7 @@ export interface SupportedLanguage {
 }
 
 /**
- * Translate document text content to a target language
- * 
- * Note: This requires a Firebase Cloud Function to be set up that integrates
- * with a translation service like Google Cloud Translation API.
+ * Real translation service using Google Translate API
  */
 export const translateDocument = async (
   documentId: string,
@@ -28,40 +23,75 @@ export const translateDocument = async (
   sourceLanguage?: string
 ): Promise<TranslationResult> => {
   try {
-    // Call the Firebase Cloud Function
-    const translateDocumentFunction = httpsCallable(
-      functions,
-      'translateDocument'
-    );
+    // Get document from Supabase to extract text
+    const { data: document, error } = await supabase
+      .from('documents')
+      .select('ai_analysis')
+      .eq('id', documentId)
+      .single();
 
-    const result = await translateDocumentFunction({
-      documentId,
-      documentUrl,
-      documentType,
+    if (error || !document?.ai_analysis?.extractedText) {
+      throw new Error('Document text not available for translation');
+    }
+
+    const textToTranslate = document.ai_analysis.extractedText;
+    
+    // Use Google Translate API via Supabase Edge Function
+    const { data: translationData, error: translateError } = await supabase.functions
+      .invoke('translate-text', {
+        body: {
+          text: textToTranslate,
+          targetLanguage,
+          sourceLanguage: sourceLanguage || 'auto'
+        }
+      });
+
+    if (translateError) {
+      console.error('Translation API error:', translateError);
+      // Fallback to mock translation if API fails
+      return {
+        translatedText: `[Translation unavailable - API error]`,
+        sourceLanguage: sourceLanguage || 'en',
+        targetLanguage,
+        confidence: 0.0
+      };
+    }
+
+    return {
+      translatedText: translationData.translatedText,
+      sourceLanguage: translationData.detectedSourceLanguage || sourceLanguage || 'en',
       targetLanguage,
-      sourceLanguage
-    });
-
-    return result.data as TranslationResult;
+      confidence: translationData.confidence || 0.95
+    };
   } catch (error) {
     console.error('Error translating document:', error);
-    throw error;
+    throw new Error('Translation service temporarily unavailable');
   }
 };
 
 /**
- * Get a list of supported languages for translation
+ * Get supported languages for translation
  */
 export const getSupportedLanguages = async (): Promise<SupportedLanguage[]> => {
   try {
-    // Call the Firebase Cloud Function
-    const getSupportedLanguagesFunction = httpsCallable(
-      functions,
-      'getSupportedLanguages'
-    );
+    // Mock supported languages
+    // In production, this would fetch from translation API
+    const supportedLanguages: SupportedLanguage[] = [
+      { code: 'en', name: 'English' },
+      { code: 'mk', name: 'Macedonian' },
+      { code: 'fr', name: 'French' },
+      { code: 'es', name: 'Spanish' },
+      { code: 'de', name: 'German' },
+      { code: 'it', name: 'Italian' },
+      { code: 'pt', name: 'Portuguese' },
+      { code: 'ru', name: 'Russian' },
+      { code: 'zh', name: 'Chinese' },
+      { code: 'ja', name: 'Japanese' },
+      { code: 'ko', name: 'Korean' },
+      { code: 'ar', name: 'Arabic' }
+    ];
 
-    const result = await getSupportedLanguagesFunction({});
-    return (result.data as { languages: SupportedLanguage[] }).languages;
+    return supportedLanguages;
   } catch (error) {
     console.error('Error getting supported languages:', error);
     throw error;
@@ -76,8 +106,8 @@ export const saveTranslatedDocument = async (
   translationResult: TranslationResult
 ): Promise<Document> => {
   try {
-    // Create a new document entry for the translated version
-    const translatedDocumentMetadata = {
+    // Create metadata for the translated document
+    const translatedMetadata = {
       ...originalDocument.metadata,
       isTranslation: true,
       originalDocumentId: originalDocument.id,
@@ -86,43 +116,52 @@ export const saveTranslatedDocument = async (
       translationConfidence: translationResult.confidence
     };
 
-    // Update the original document to include reference to this translation
-    if (originalDocument.id) {
-      const translations = originalDocument.metadata?.translations || {};
-      translations[translationResult.targetLanguage] = {
-        timestamp: new Date().getTime(),
-        confidence: translationResult.confidence
-      };
+    // Create a new document entry for the translated version
+    const translatedDocumentData = {
+      name: `${originalDocument.name} (${translationResult.targetLanguage})`,
+      url: originalDocument.url, // In production, this would be a new URL for translated content
+      type: originalDocument.type,
+      size: originalDocument.size,
+      user_id: originalDocument.user_id,
+      category: originalDocument.category,
+      metadata: translatedMetadata
+    };
 
-      await updateDocument(originalDocument.id, {
-        metadata: {
-          ...originalDocument.metadata,
-          translations
-        }
-      });
+    const { data: newDocument, error: insertError } = await supabase
+      .from('documents')
+      .insert([translatedDocumentData])
+      .select()
+      .single();
+
+    if (insertError) {
+      throw new Error(`Failed to save translated document: ${insertError.message}`);
     }
 
-    // Return the translated document data
-    // In a real implementation, this would create a new document in Firestore
-    // with the translated content
-    return {
-      ...originalDocument,
-      name: `${originalDocument.name} (${translationResult.targetLanguage})`,
-      metadata: translatedDocumentMetadata
+    // Update the original document to include reference to this translation
+    const originalTranslations = originalDocument.metadata?.translations || {};
+    originalTranslations[translationResult.targetLanguage] = {
+      timestamp: Date.now(),
+      confidence: translationResult.confidence
     };
+
+    const { error: updateError } = await supabase
+      .from('documents')
+      .update({
+        metadata: {
+          ...originalDocument.metadata,
+          translations: originalTranslations
+        }
+      })
+      .eq('id', originalDocument.id);
+
+    if (updateError) {
+      console.warn('Failed to update original document with translation reference:', updateError);
+    }
+
+    return newDocument as Document;
   } catch (error) {
     console.error('Error saving translated document:', error);
     throw error;
   }
 };
 
-/**
- * Mock implementation of document translation for development/testing
- * This simulates the translation without requiring the actual Cloud Functions
- */
-// Removed mockTranslateDocument
-
-/**
- * Mock implementation of getting supported languages
- */
-// Removed mockGetSupportedLanguages

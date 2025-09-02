@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useQuery, useMutation, useQueryClient } from 'react-query';
-import { Document } from '../../services/documentService';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { 
   getSupportedLanguages,
   translateDocument,
@@ -8,18 +7,20 @@ import {
   SupportedLanguage,
   TranslationResult
 } from '../../services/translationService';
+import { Document as AppDocument } from '../../types/document';
 import { useLanguage } from '../../context/LanguageContext';
 
 interface DocumentTranslationProps {
-  document: Document;
-  onTranslationComplete?: (translatedDocument: Document) => void;
+  document: AppDocument;
+  onTranslationComplete?: (translatedDocument: AppDocument) => void;
+  onClose?: () => void;
   onCancel?: () => void;
 }
 
 const DocumentTranslation: React.FC<DocumentTranslationProps> = ({
   document,
   onTranslationComplete,
-  onCancel
+  onClose
 }) => {
   const { translate } = useLanguage();
   const [targetLanguage, setTargetLanguage] = useState<string>('');
@@ -31,7 +32,10 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({
     data: languages, 
     isLoading: isLoadingLanguages, 
     isError: isLanguagesError 
-  } = useQuery('supportedLanguages', getSupportedLanguages);
+  } = useQuery({
+    queryKey: ['supportedLanguages'],
+    queryFn: getSupportedLanguages
+  });
 
   // Filter out the current document language from the options
   const availableLanguages = languages?.filter(
@@ -39,8 +43,8 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({
   );
 
   // Translation mutation
-  const translateMutation = useMutation(
-    async () => {
+  const translateMutation = useMutation({
+    mutationFn: async () => {
       setTranslationInProgress(true);
       const translationResult = await translateDocument(
         document.id || '',
@@ -52,13 +56,12 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({
       const translatedDocument = await saveTranslatedDocument(document, translationResult);
       return translatedDocument;
     },
-    {
-      onSuccess: (translatedDocument: Document) => {
-        // Invalidate and refetch documents query to update the list
-        queryClient.invalidateQueries(['documents']);
-        
-        if (onTranslationComplete) {
-          onTranslationComplete(translatedDocument);
+    onSuccess: (translatedDocument: AppDocument) => {
+      // Invalidate and refetch documents query to update the list
+      queryClient.invalidateQueries({ queryKey: ['documents'] });
+      
+      if (onTranslationComplete) {
+        onTranslationComplete(translatedDocument);
         }
         
         setTranslationInProgress(false);
@@ -144,7 +147,7 @@ const DocumentTranslation: React.FC<DocumentTranslationProps> = ({
           <div className="flex justify-end space-x-3">
             <button
               type="button"
-              onClick={onCancel}
+              onClick={onClose}
               className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-800 dark:text-gray-200 rounded-md hover:bg-gray-300 dark:hover:bg-gray-600 focus:outline-none focus:ring-2 focus:ring-gray-400"
               disabled={translationInProgress}
             >

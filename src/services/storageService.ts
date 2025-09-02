@@ -1,57 +1,85 @@
-import { collection, query, where, getDocs } from 'firebase/firestore';
-import { db } from './firebase';
+import { supabase } from './supabase';
 
 export interface StorageUsage {
   totalSize: number;
   documentCount: number;
   lastUpdated: Date;
-  firestoreSize: number;
-  firestoreCount: number;
 }
 
 /**
- * Calculate storage usage from Firestore documents
- * This avoids CORS issues with Firebase Storage listAll
+ * Calculate storage usage from Supabase documents
  */
 export const calculateStorageUsage = async (userId: string): Promise<StorageUsage> => {
   try {
-    let firestoreSize = 0;
-    let firestoreCount = 0;
+    console.log('Calculating storage for user:', userId);
     
-    // Check Firestore documents
-    try {
-      const documentsRef = collection(db, 'documents');
-      const q = query(documentsRef, where('userId', '==', userId));
-      const querySnapshot = await getDocs(q);
-      
-      querySnapshot.forEach((doc) => {
-        const data = doc.data();
-        if (data.fileSize && typeof data.fileSize === 'number') {
-          firestoreSize += data.fileSize;
-          firestoreCount++;
-        }
+    // Get files from Supabase Storage bucket
+    const { data: files, error: storageError } = await supabase.storage
+      .from('documents')
+      .list(userId, {
+        limit: 1000,
+        sortBy: { column: 'created_at', order: 'desc' }
       });
-    } catch (error) {
-      console.error('Error querying Firestore:', error);
+
+    console.log('Storage bucket query result:', { files, storageError });
+
+    if (storageError) {
+      console.error('Error querying Supabase storage bucket:', storageError);
+    }
+
+    // Also get from documents table for backup
+    const { data: documents, error: dbError } = await supabase
+      .from('documents')
+      .select('size')
+      .eq('user_id', userId);
+
+    console.log('Database query result:', { documents, dbError });
+
+    let totalSize = 0;
+    let documentCount = 0;
+
+    // Use storage bucket data if available
+    if (files && files.length > 0) {
+      totalSize = files.reduce((sum, file) => {
+        const size = file.metadata?.size || 0;
+        console.log(`File: ${file.name}, Size: ${size}`);
+        return sum + size;
+      }, 0);
+      documentCount = files.length;
+      console.log('Using storage bucket data:', { totalSize, documentCount, files });
+    } 
+    // Fallback to database data
+    else if (documents && documents.length > 0) {
+      totalSize = documents.reduce((sum, doc) => sum + (doc.size || 0), 0);
+      documentCount = documents.length;
+      console.log('Using database data:', { totalSize, documentCount });
+    }
+    // If no data found, try to get bucket info
+    else {
+      console.log('No files found in bucket or database. Checking bucket existence...');
+      const { data: bucketList, error: bucketError } = await supabase.storage.listBuckets();
+      console.log('Available buckets:', bucketList, bucketError);
+      
+      // Try to list all files in the documents bucket
+      const { data: allFiles, error: allFilesError } = await supabase.storage
+        .from('documents')
+        .list('', { limit: 100 });
+      console.log('All files in documents bucket:', allFiles, allFilesError);
     }
     
-    const result = {
-      totalSize: firestoreSize,
-      documentCount: firestoreCount,
+    console.log('Final calculated storage:', { totalSize, documentCount });
+    
+    return {
+      totalSize,
+      documentCount,
       lastUpdated: new Date(),
-      firestoreSize,
-      firestoreCount
     };
-    return result;
   } catch (error) {
     console.error('Error calculating storage usage:', error);
-    // Return default values on error
     return {
       totalSize: 0,
       documentCount: 0,
       lastUpdated: new Date(),
-      firestoreSize: 0,
-      firestoreCount: 0
     };
   }
 };

@@ -1,0 +1,155 @@
+import { extractTextFromDocument, classifyDocument } from '../../services/aiService';
+
+// Mock Tesseract.js
+jest.mock('tesseract.js', () => ({
+  recognize: jest.fn()
+}));
+
+// Mock pdf-parse
+jest.mock('pdf-parse', () => jest.fn());
+
+describe('AI Service', () => {
+  beforeEach(() => {
+    jest.clearAllMocks();
+  });
+
+  describe('extractTextFromDocument', () => {
+    it('should extract text from PDF files', async () => {
+      const mockPdfParse = require('pdf-parse');
+      mockPdfParse.mockResolvedValue({ text: 'Sample PDF text content' });
+
+      const file = new File(['pdf content'], 'test.pdf', { type: 'application/pdf' });
+      const result = await extractTextFromDocument(file);
+
+      expect(result).toBe('Sample PDF text content');
+      expect(mockPdfParse).toHaveBeenCalledWith(expect.any(ArrayBuffer));
+    });
+
+    it('should extract text from image files using OCR', async () => {
+      const mockTesseract = require('tesseract.js');
+      mockTesseract.recognize.mockResolvedValue({
+        data: { text: 'Sample image text content' }
+      });
+
+      const file = new File(['image content'], 'test.jpg', { type: 'image/jpeg' });
+      const result = await extractTextFromDocument(file);
+
+      expect(result).toBe('Sample image text content');
+      expect(mockTesseract.recognize).toHaveBeenCalledWith(file, 'eng');
+    });
+
+    it('should extract text from text files', async () => {
+      const file = new File(['Plain text content'], 'test.txt', { type: 'text/plain' });
+      const result = await extractTextFromDocument(file);
+
+      expect(result).toBe('Plain text content');
+    });
+
+    it('should handle unsupported file types', async () => {
+      const file = new File(['binary content'], 'test.exe', { type: 'application/octet-stream' });
+      const result = await extractTextFromDocument(file);
+
+      expect(result).toBe('');
+    });
+
+    it('should handle extraction errors gracefully', async () => {
+      const mockPdfParse = require('pdf-parse');
+      mockPdfParse.mockRejectedValue(new Error('PDF parsing failed'));
+
+      const file = new File(['corrupted pdf'], 'test.pdf', { type: 'application/pdf' });
+      const result = await extractTextFromDocument(file);
+
+      expect(result).toBe('');
+    });
+  });
+
+  describe('classifyDocument', () => {
+    it('should classify invoice documents', async () => {
+      const result = await classifyDocument(
+        'invoice-123.pdf',
+        'application/pdf',
+        'Invoice #123 Total Amount: $500.00 Due Date: 2024-01-15'
+      );
+
+      expect(result.category).toBe('Invoice');
+      expect(result.confidence).toBeGreaterThan(0.8);
+      expect(result.method).toBe('keyword');
+    });
+
+    it('should classify contract documents', async () => {
+      const result = await classifyDocument(
+        'agreement.pdf',
+        'application/pdf',
+        'This agreement is entered into between parties for the purpose of contract terms'
+      );
+
+      expect(result.category).toBe('Contract');
+      expect(result.confidence).toBeGreaterThan(0.7);
+    });
+
+    it('should classify receipt documents', async () => {
+      const result = await classifyDocument(
+        'receipt.jpg',
+        'image/jpeg',
+        'Receipt Store: ABC Market Date: 2024-01-01 Total: $25.99'
+      );
+
+      expect(result.category).toBe('Receipt');
+      expect(result.confidence).toBeGreaterThan(0.8);
+    });
+
+    it('should handle documents with no clear classification', async () => {
+      const result = await classifyDocument(
+        'random.txt',
+        'text/plain',
+        'This is just some random text without any specific document type indicators'
+      );
+
+      expect(result.category).toBe('Other');
+      expect(result.confidence).toBeLessThan(0.5);
+    });
+
+    it('should use filename for classification when text is insufficient', async () => {
+      const result = await classifyDocument(
+        'tax_return_2023.pdf',
+        'application/pdf',
+        'Some generic text'
+      );
+
+      expect(result.category).toBe('Tax Document');
+      expect(result.confidence).toBeGreaterThan(0.6);
+    });
+  });
+
+  describe('detectLanguage', () => {
+    it('should detect English text', () => {
+      const result = detectLanguage('This is a sample English text document');
+      expect(result.language).toBe('en');
+      expect(result.confidence).toBeGreaterThan(0.8);
+    });
+
+    it('should detect Spanish text', () => {
+      const result = detectLanguage('Este es un documento de texto en español');
+      expect(result.language).toBe('es');
+      expect(result.confidence).toBeGreaterThan(0.7);
+    });
+
+    it('should detect French text', () => {
+      const result = detectLanguage('Ceci est un document texte en français');
+      expect(result.language).toBe('fr');
+      expect(result.confidence).toBeGreaterThan(0.7);
+    });
+
+    it('should handle mixed language text', () => {
+      const result = detectLanguage('Hello world Hola mundo Bonjour monde');
+      expect(result.language).toBe('en'); // Should default to most common
+      expect(result.confidence).toBeLessThan(0.8);
+    });
+
+    it('should handle empty or very short text', () => {
+      const result = detectLanguage('Hi');
+      expect(result.language).toBe('en'); // Default fallback
+      expect(result.confidence).toBeLessThan(0.5);
+    });
+  });
+});

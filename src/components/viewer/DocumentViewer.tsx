@@ -1,25 +1,15 @@
 import React, { useState, useEffect } from 'react';
 import { useLanguage } from '../../context/LanguageContext';
-import { doc, getDoc } from 'firebase/firestore';
-import { getDownloadURL, ref } from 'firebase/storage';
-import { db, storage } from '../../services/firebase';
+import { supabase, Document } from '../../services/supabase';
 
 interface DocumentViewerProps {
   documentId: string;
   onClose?: () => void;
 }
 
-interface DocumentData {
-  name: string;
-  type: string;
-  url: string;
-  size: number;
-  uploadedAt: any; // Firestore timestamp
-}
-
 const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) => {
   const { translate } = useLanguage();
-  const [document, setDocument] = useState<DocumentData | null>(null);
+  const [document, setDocument] = useState<Document | null>(null);
   const [loading, setLoading] = useState<boolean>(true);
   const [error, setError] = useState<string | null>(null);
   const [viewerType, setViewerType] = useState<'pdf' | 'image' | 'text' | 'other'>('other');
@@ -30,17 +20,19 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) 
         setLoading(true);
         setError(null);
 
-        // Get document metadata from Firestore
-        const docRef = doc(db, `documents/${documentId}`);
-        const docSnap = await getDoc(docRef);
+        // Get document metadata from Supabase
+        const { data: documentData, error: fetchError } = await supabase
+          .from('documents')
+          .select('*')
+          .eq('id', documentId)
+          .single();
 
-        if (!docSnap.exists()) {
+        if (fetchError || !documentData) {
+          console.error('Document fetch error:', fetchError);
           setError(translate('viewer.error.notFound'));
           setLoading(false);
           return;
         }
-
-        const documentData = docSnap.data() as DocumentData;
 
         // Determine viewer type based on file type
         if (documentData.type === 'application/pdf') {
@@ -78,9 +70,10 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) 
       case 'pdf':
         return (
           <iframe
-            src={`${document.url}#toolbar=0`}
+            src={document.url}
             className="w-full h-full border-0"
             title={document.name}
+            style={{ minHeight: '600px' }}
           />
         );
       case 'image':
@@ -238,12 +231,10 @@ const DocumentViewer: React.FC<DocumentViewerProps> = ({ documentId, onClose }) 
             <div>
               {translate('viewer.size')}: {(document.size / 1024 / 1024).toFixed(2)} MB
             </div>
-            {document.uploadedAt && (
+            {document.created_at && (
               <div>
                 {translate('viewer.uploaded')}:{' '}
-                {document.uploadedAt.toDate
-                  ? document.uploadedAt.toDate().toLocaleDateString()
-                  : new Date(document.uploadedAt).toLocaleDateString()}
+                {new Date(document.created_at).toLocaleDateString()}
               </div>
             )}
           </div>

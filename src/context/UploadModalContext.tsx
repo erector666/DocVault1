@@ -3,6 +3,8 @@ import { UploadModal } from '../components/upload';
 
 interface UploadModalContextType {
   openModal: () => void;
+  closeModal: () => void;
+  isUploadModalOpen: boolean;
 }
 
 const UploadModalContext = createContext<UploadModalContextType | undefined>(undefined);
@@ -31,7 +33,7 @@ export const UploadModalProvider: React.FC<UploadModalProviderProps> = ({ childr
   };
 
   return (
-    <UploadModalContext.Provider value={{ openModal }}>
+    <UploadModalContext.Provider value={{ openModal, closeModal, isUploadModalOpen: isOpen }}>
       {children}
       <UploadModal 
         isOpen={isOpen} 

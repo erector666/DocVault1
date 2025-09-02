@@ -1,7 +1,7 @@
 import React from 'react';
 import { Routes, Route, Navigate } from 'react-router-dom';
 import ProtectedRoute from '../components/auth/ProtectedRoute';
-import { useAuth } from '../context/AuthContext';
+import { useSupabaseAuth } from '../context/SupabaseAuthContext';
 import SplashScreen from '../components/splash/SplashScreen';
 import Layout from '../components/layout/Layout';
 
@@ -26,16 +26,18 @@ const LoadingFallback = () => (
 );
 
 const AppRoutes: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser } = useSupabaseAuth();
 
   return (
     <React.Suspense fallback={<LoadingFallback />}>
       <Routes>
         {/* Public routes */}
-        <Route path="/" element={<SplashScreen />} />
+        <Route path="/" element={currentUser ? <Navigate to="/dashboard" replace /> : <Navigate to="/login" replace />} />
         <Route path="/login" element={!currentUser ? <Login /> : <Navigate to="/dashboard" replace />} />
         <Route path="/register" element={!currentUser ? <Register /> : <Navigate to="/dashboard" replace />} />
         <Route path="/forgot-password" element={!currentUser ? <ForgotPassword /> : <Navigate to="/dashboard" replace />} />
+        <Route path="/splash" element={<SplashScreen />} />
+        {/* Protected routes */}
         <Route 
           path="/dashboard" 
           element={
@@ -47,7 +49,7 @@ const AppRoutes: React.FC = () => {
           } 
         />
         <Route 
-          path="/category/:categoryId" 
+          path="/category/:categoryName" 
           element={
             <ProtectedRoute>
               <Layout>
@@ -62,26 +64,6 @@ const AppRoutes: React.FC = () => {
             <ProtectedRoute>
               <Layout>
                 <DocumentView />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/settings" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Settings />
-              </Layout>
-            </ProtectedRoute>
-          } 
-        />
-        <Route 
-          path="/profile" 
-          element={
-            <ProtectedRoute>
-              <Layout>
-                <Profile />
               </Layout>
             </ProtectedRoute>
           } 

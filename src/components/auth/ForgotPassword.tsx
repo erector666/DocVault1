@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { Link } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { useLanguage } from '../../context/LanguageContext';
 import NebulaBackground from '../common/NebulaBackground';
 
 const ForgotPassword: React.FC = () => {
-  const { resetPassword, resendVerificationEmail } = useAuth();
+  const { resetPassword } = useSupabaseAuth();
   const { translate } = useLanguage();
   
   const [email, setEmail] = useState('');
@@ -80,7 +80,8 @@ const ForgotPassword: React.FC = () => {
       setError('');
       setMessage('');
       setResendLoading(true);
-      await resendVerificationEmail(email, password);
+      // Resend verification not implemented in Supabase yet
+      throw new Error('Resend verification not available');
       setMessage('Verification email sent! Please check your email (including spam folder).');
     } catch (err: any) {
       console.error('Resend verification error:', err);

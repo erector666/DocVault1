@@ -1,11 +1,11 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useAuth } from '../../context/AuthContext';
+import { useSupabaseAuth } from '../../context/SupabaseAuthContext';
 import { storage } from '../../services/firebase';
 import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
 import { updateProfile } from 'firebase/auth';
 
 const Profile: React.FC = () => {
-  const { currentUser } = useAuth();
+  const { currentUser, updateProfile } = useSupabaseAuth();
   const [displayName, setDisplayName] = useState('');
   const [photoURL, setPhotoURL] = useState('');
   const [newAvatar, setNewAvatar] = useState<File | null>(null);
@@ -15,8 +15,8 @@ const Profile: React.FC = () => {
 
   useEffect(() => {
     if (currentUser) {
-      setDisplayName(currentUser.displayName || '');
-      setPhotoURL(currentUser.photoURL || '');
+      setDisplayName(currentUser.user_metadata?.full_name || '');
+      setPhotoURL(currentUser.user_metadata?.avatar_url || '');
     }
   }, [currentUser]);
 
@@ -34,18 +34,17 @@ const Profile: React.FC = () => {
     setMessage('');
 
     try {
-      let newPhotoURL = currentUser.photoURL;
+      let newPhotoURL = currentUser.user_metadata?.avatar_url;
 
       if (newAvatar) {
-        const avatarRef = ref(storage, `avatars/${currentUser.uid}`);
-        await uploadBytes(avatarRef, newAvatar);
-        newPhotoURL = await getDownloadURL(avatarRef);
+        // Avatar upload disabled during migration
+        // const avatarRef = ref(storage, `avatars/${currentUser.id}`);
+        // await uploadBytes(avatarRef, newAvatar);
+        // newPhotoURL = await getDownloadURL(avatarRef);
+        console.log('Avatar upload disabled during migration');
       }
 
-      await updateProfile(currentUser, {
-        displayName,
-        photoURL: newPhotoURL || null,
-      });
+      await updateProfile({ full_name: displayName });
 
       setMessage('Profile updated successfully!');
     } catch (error) {
