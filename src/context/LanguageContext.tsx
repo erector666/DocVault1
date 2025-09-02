@@ -227,6 +227,16 @@ const defaultTranslations: Translations = {
     mk: 'Избриши документ',
     fr: 'Supprimer le document',
   },
+  'documents.delete.confirm': {
+    en: 'Are you sure you want to delete this document?',
+    mk: 'Дали сте сигурни дека сакате да го избришете овој документ?',
+    fr: 'Êtes-vous sûr de vouloir supprimer ce document?',
+  },
+  'documents.delete.warning': {
+    en: 'This action cannot be undone.',
+    mk: 'Ова дејство не може да се врати.',
+    fr: 'Cette action ne peut pas être annulée.',
+  },
   'auth.errors.invalidCredentials': {
     en: 'Invalid email or password',
     mk: 'Невалидна е-пошта или лозинка',

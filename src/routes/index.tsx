@@ -9,8 +9,6 @@ import Layout from '../components/layout/Layout';
 const Dashboard = React.lazy(() => import('../pages/Dashboard'));
 const CategoryView = React.lazy(() => import('../pages/CategoryView'));
 const DocumentView = React.lazy(() => import('../pages/DocumentView'));
-const Settings = React.lazy(() => import('../pages/Settings'));
-const Profile = React.lazy(() => import('../components/profile/Profile'));
 const NotFound = React.lazy(() => import('../pages/NotFound'));
 
 // Auth pages

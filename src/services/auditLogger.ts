@@ -29,7 +29,8 @@ class AuditLogger {
   private maxEvents = 1000;
 
   constructor() {
-    // In production, this would connect to a persistent storage system
+    // Initialize audit logger - in production, this would connect to a persistent storage system
+    this.events = [];
   }
 
   log(event: Omit<AuditEvent, 'id' | 'timestamp'>): string {

@@ -96,6 +96,9 @@ describe('DocumentList Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Test Document 1.pdf')).toBeInTheDocument();
+    });
+    
+    await waitFor(() => {
       expect(screen.getByText('Invoice 123.pdf')).toBeInTheDocument();
     });
   });
@@ -109,8 +112,17 @@ describe('DocumentList Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('1.00 MB')).toBeInTheDocument(); // File size
+    });
+    
+    await waitFor(() => {
       expect(screen.getByText('512.00 KB')).toBeInTheDocument(); // File size
+    });
+    
+    await waitFor(() => {
       expect(screen.getByText('Document')).toBeInTheDocument(); // Category
+    });
+    
+    await waitFor(() => {
       expect(screen.getByText('Invoice')).toBeInTheDocument(); // Category
     });
   });
@@ -124,6 +136,9 @@ describe('DocumentList Component', () => {
 
     await waitFor(() => {
       expect(screen.getByText('85%')).toBeInTheDocument(); // Confidence
+    });
+    
+    await waitFor(() => {
       expect(screen.getByText('92%')).toBeInTheDocument(); // Confidence
     });
   });

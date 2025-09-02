@@ -1,5 +1,4 @@
 import { documentCache, searchCache, userCache } from './cacheManager';
-import { performanceMonitor } from './performanceMonitor';
 
 interface OptimizationConfig {
   enableImageLazyLoading: boolean;

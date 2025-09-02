@@ -155,7 +155,8 @@ const ALLOWED_FILE_TYPES = [
 
 const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
-const validateFile = (file: File): void => {
+// File validation function (used internally)
+const performFileValidation = (file: File): void => {
   if (!ALLOWED_FILE_TYPES.includes(file.type)) {
     throw new Error(`File type ${file.type} not allowed. Allowed types: ${ALLOWED_FILE_TYPES.join(', ')}`);
   }
@@ -205,7 +206,7 @@ export const uploadDocument = async (
     if (onProgress) onProgress(60);
 
     // Upload file to storage
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file, {
         cacheControl: '3600',

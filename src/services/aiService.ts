@@ -26,8 +26,8 @@ export interface DocumentMetadata {
   documentType?: string;
 }
 
-// Classification rules based on filename and content patterns
-const CLASSIFICATION_RULES = {
+// Classification rules based on filename and content patterns (used internally)
+const getClassificationRules = () => ({
   [DOCUMENT_CATEGORIES.BILLS]: [
     'bill', 'invoice', 'receipt', 'utility', 'electric', 'gas', 'water', 'internet', 'phone'
   ],
@@ -52,7 +52,7 @@ const CLASSIFICATION_RULES = {
   [DOCUMENT_CATEGORIES.INSURANCE]: [
     'insurance', 'policy', 'claim', 'coverage', 'premium', 'deductible'
   ]
-};
+});
 
 /**
  * Enhanced ML-based document classification with TensorFlow.js

@@ -42,7 +42,7 @@ export const createDocumentVersion = async (
     const fileName = `${Date.now()}-v${nextVersion}-${file.name}`;
     const filePath = `${userId}/versions/${documentId}/${fileName}`;
 
-    const { data: uploadData, error: uploadError } = await supabase.storage
+    const { error: uploadError } = await supabase.storage
       .from('documents')
       .upload(filePath, file);
 

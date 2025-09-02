@@ -8,7 +8,7 @@ export const uploadDocument = async (
 ): Promise<Document> => {
   // Upload file to storage
   const fileName = `${userId}/${Date.now()}-${file.name}`;
-  const { data: uploadData, error: uploadError } = await supabase.storage
+  const { error: uploadError } = await supabase.storage
     .from('documents')
     .upload(fileName, file);
 
